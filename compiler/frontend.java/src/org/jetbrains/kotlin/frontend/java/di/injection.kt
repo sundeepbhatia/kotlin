@@ -123,8 +123,12 @@ fun StorageComponentContainer.configureJavaSpecificComponents(
 
     useInstance(languageVersionSettings.getFlag(JvmAnalysisFlags.javaTypeEnhancementState))
 
-    if (useBuiltInsProvider) {
-        useInstance((moduleContext.module.builtIns as JvmBuiltIns).settings)
+    val builtIns = moduleContext.module.builtIns
+    if (useBuiltInsProvider && builtIns is JvmBuiltIns) {
+        // TODO(dsavvinov): make sure that useBuiltInsProvider == true <=> builtIns is JvmBuiltIns
+        // Currently, that's not the case at least in IDE unit-tests, because they do not set-up
+        // dependency on SDK properly
+        useInstance(builtIns.settings)
         useImpl<JvmBuiltInsPackageFragmentProvider>()
     }
     useImpl<OptionalAnnotationPackageFragmentProvider>()

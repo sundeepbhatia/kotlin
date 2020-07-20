@@ -17,9 +17,11 @@
 package org.jetbrains.kotlin.resolve.jvm
 
 import org.jetbrains.kotlin.analyzer.*
+import org.jetbrains.kotlin.builtins.jvm.JvmBuiltIns
 import org.jetbrains.kotlin.builtins.jvm.JvmBuiltInsPackageFragmentProvider
 import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.container.get
+import org.jetbrains.kotlin.container.tryGetService
 import org.jetbrains.kotlin.context.ModuleContext
 import org.jetbrains.kotlin.descriptors.impl.CompositePackageFragmentProvider
 import org.jetbrains.kotlin.descriptors.impl.ModuleDescriptorImpl
@@ -36,6 +38,7 @@ import org.jetbrains.kotlin.resolve.TargetEnvironment
 import org.jetbrains.kotlin.resolve.jvm.extensions.PackageFragmentProviderExtension
 import org.jetbrains.kotlin.resolve.lazy.ResolveSession
 import org.jetbrains.kotlin.resolve.lazy.declarations.DeclarationProviderFactoryService
+import org.jetbrains.kotlin.utils.addIfNotNull
 
 class JvmPlatformParameters(
     val packagePartProviderFactory: (ModuleContent<*>) -> PackagePartProvider,
@@ -126,9 +129,7 @@ class JvmResolverForModuleFactory(
             container.get<JavaDescriptorResolver>().packageFragmentProvider,
         )
 
-        if (platformParameters.loadBuiltInsFromDependencies) {
-            providersForModule += container.get<JvmBuiltInsPackageFragmentProvider>()
-        }
+        providersForModule.addIfNotNull(container.tryGetService(JvmBuiltInsPackageFragmentProvider::class.java))
 
         providersForModule +=
             PackageFragmentProviderExtension.getInstances(project)

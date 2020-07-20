@@ -8,6 +8,7 @@
 package org.jetbrains.kotlin.caches.resolve
 
 import com.intellij.psi.search.GlobalSearchScope
+import com.intellij.util.containers.addIfNotNull
 import org.jetbrains.kotlin.analyzer.*
 import org.jetbrains.kotlin.analyzer.common.CommonAnalysisParameters
 import org.jetbrains.kotlin.analyzer.common.configureCommonSpecificComponents
@@ -137,7 +138,7 @@ class CompositeResolverForModuleFactory(
             if (targetPlatform.has<JvmPlatform>()) add(container.get<JavaDescriptorResolver>().packageFragmentProvider)
 
             // Use JVM built-ins only for completely-JVM modules
-            if (targetPlatform.isJvm()) add(container.get<JvmBuiltInsPackageFragmentProvider>())
+            addIfNotNull(container.tryGetService(JvmBuiltInsPackageFragmentProvider::class.java))
         }
 
     private fun getNativeProvidersIfAny(moduleInfo: ModuleInfo, container: StorageComponentContainer): List<PackageFragmentProvider> {
