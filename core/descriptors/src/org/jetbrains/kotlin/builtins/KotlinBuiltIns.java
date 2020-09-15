@@ -47,6 +47,8 @@ public abstract class KotlinBuiltIns {
 
     private final StorageManager storageManager;
 
+    private final Throwable createdAt;
+
     public static final Name BUILTINS_MODULE_NAME = Name.special("<built-ins module>");
 
     protected KotlinBuiltIns(@NotNull StorageManager storageManager) {
@@ -97,6 +99,8 @@ public abstract class KotlinBuiltIns {
                 return (ClassDescriptor) classifier;
             }
         });
+
+        this.createdAt = new Throwable();
     }
 
     protected void createBuiltInsModule(boolean isFallback) {
@@ -203,9 +207,14 @@ public abstract class KotlinBuiltIns {
 
     @NotNull
     public ClassDescriptor getBuiltInClassByFqName(@NotNull FqName fqName) {
-        ClassDescriptor descriptor = DescriptorUtilKt.resolveClassByFqName(builtInsModule, fqName, NoLookupLocation.FROM_BUILTINS);
+        ClassDescriptor descriptor = getBuiltInClassByFqNameNonStrict(fqName);
         assert descriptor != null : "Can't find built-in class " + fqName;
         return descriptor;
+    }
+
+    @Nullable
+    public ClassDescriptor getBuiltInClassByFqNameNonStrict(@NotNull FqName fqName) {
+        return DescriptorUtilKt.resolveClassByFqName(builtInsModule, fqName, NoLookupLocation.FROM_BUILTINS);
     }
 
     @NotNull

@@ -38,7 +38,7 @@ object JavaToKotlinClassMapper : PlatformToKotlinClassMapper {
         val kotlinClassId =
             if (functionTypeArity != null && fqName == JavaToKotlinClassMap.FUNCTION_N_FQ_NAME) StandardNames.getFunctionClassId(functionTypeArity)
             else JavaToKotlinClassMap.mapJavaToKotlin(fqName)
-        return if (kotlinClassId != null) builtIns.getBuiltInClassByFqName(kotlinClassId.asSingleFqName()) else null
+        return if (kotlinClassId != null) builtIns.getBuiltInClassByFqNameNonStrict(kotlinClassId.asSingleFqName()) else null
     }
 
     fun isMutable(mutable: ClassDescriptor): Boolean = JavaToKotlinClassMap.isMutable(DescriptorUtils.getFqName(mutable))

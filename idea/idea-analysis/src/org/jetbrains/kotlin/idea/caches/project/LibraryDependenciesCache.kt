@@ -74,8 +74,8 @@ class LibraryDependenciesCacheImpl(private val project: Project) : LibraryDepend
                     val otherLibrary = libraryOrderEntry.library
                     if (otherLibrary is LibraryEx && !otherLibrary.isDisposed) {
                         val otherLibraryInfos = createLibraryInfo(project, otherLibrary)
-                        otherLibraryInfos.firstOrNull()?.platform?.let { otherLibraryPlatform ->
-                            if (compatiblePlatforms(platform, otherLibraryPlatform)) {
+                        otherLibraryInfos.firstOrNull()?.let { otherLibraryInfo ->
+                            if (compatiblePlatforms(platform, otherLibraryInfo.platform)) {
                                 libraries.addAll(otherLibraryInfos)
                             }
                         }

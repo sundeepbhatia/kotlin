@@ -22,9 +22,11 @@ import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentProvider
+import org.jetbrains.kotlin.idea.caches.project.KotlinStdlibInfo
 import org.jetbrains.kotlin.idea.caches.project.LibraryInfo
 import org.jetbrains.kotlin.idea.caches.project.SdkInfo
 import org.jetbrains.kotlin.idea.caches.resolve.BuiltInsCacheKey
+import org.jetbrains.kotlin.idea.caches.resolve.isKotlinStdlib
 import org.jetbrains.kotlin.idea.framework.CommonLibraryKind
 import org.jetbrains.kotlin.idea.klib.AbstractKlibLibraryInfo
 import org.jetbrains.kotlin.idea.klib.createKlibPackageFragmentProvider
@@ -58,6 +60,8 @@ class CommonPlatformKindResolution : IdePlatformKindResolution {
     }
 
     override fun createLibraryInfo(project: Project, library: Library): List<LibraryInfo> {
+        if (library.isKotlinStdlib) return listOf(KotlinStdlibInfo(project, library, CommonPlatforms.defaultCommonPlatform))
+
         val klibFiles = library.getFiles(OrderRootType.CLASSES).filter {
             it.isKlibLibraryRootForPlatform(CommonPlatforms.defaultCommonPlatform)
         }

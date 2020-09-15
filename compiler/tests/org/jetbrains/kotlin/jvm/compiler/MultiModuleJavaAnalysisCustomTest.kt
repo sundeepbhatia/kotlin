@@ -17,7 +17,6 @@
 package org.jetbrains.kotlin.jvm.compiler
 
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.util.ModificationTracker
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.search.DelegatingGlobalSearchScope
 import com.intellij.psi.search.GlobalSearchScope
@@ -26,10 +25,7 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.builtins.jvm.JvmBuiltIns
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
-import org.jetbrains.kotlin.config.LanguageFeature
-import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.config.LanguageVersionSettingsImpl
-import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.context.withModule
 import org.jetbrains.kotlin.descriptors.*
@@ -96,7 +92,8 @@ class MultiModuleJavaAnalysisCustomTest : KtUsefulTestCase() {
             moduleByJavaClass = { javaClass ->
                 val moduleName = javaClass.name.asString().toLowerCase().first().toString()
                 modules.first { it._name == moduleName }
-            }
+            },
+            isModuleAnStdlib = { false }
         )
 
         val resolverForProject = object : AbstractResolverForProject<ModuleInfo>(

@@ -389,6 +389,26 @@ abstract class LibraryInfo(override val project: Project, val library: Library) 
     override fun hashCode(): Int = 43 * library.hashCode()
 }
 
+sealed class KotlinCoreLibraryInfo(project: Project, library: Library, override val platform: TargetPlatform) : LibraryInfo(project, library) {
+    override fun dependencies(): List<IdeaModuleInfo> {
+        val approximateDependencies = super.dependencies()
+        return filterIncorrectDependencies(approximateDependencies)
+    }
+
+    protected abstract fun filterIncorrectDependencies(approximateDependencies: List<IdeaModuleInfo>): List<IdeaModuleInfo>
+}
+
+class KotlinStdlibInfo(project: Project, library: Library, platform: TargetPlatform) : KotlinCoreLibraryInfo(project, library, platform) {
+    // stdlib doesn't depend on anything
+    override fun filterIncorrectDependencies(approximateDependencies: List<IdeaModuleInfo>): List<IdeaModuleInfo> = listOf(this)
+}
+
+class KotlinReflectLibraryInfo(project: Project, library: Library, platform: TargetPlatform) :
+    KotlinCoreLibraryInfo(project, library, platform) {
+    override fun filterIncorrectDependencies(approximateDependencies: List<IdeaModuleInfo>): List<IdeaModuleInfo> =
+        approximateDependencies.filter { it === this || it is KotlinStdlibInfo }
+}
+
 data class LibrarySourceInfo(override val project: Project, val library: Library, override val binariesModuleInfo: BinaryModuleInfo) :
     IdeaModuleInfo, SourceForBinaryModuleInfo {
 

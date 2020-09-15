@@ -123,6 +123,7 @@ abstract class ResolverForModuleFactory {
     ): ResolverForModule
 }
 
+@OptIn(ExperimentalStdlibApi::class)
 class LazyModuleDependencies<M : ModuleInfo>(
     storageManager: StorageManager,
     private val module: M,

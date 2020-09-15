@@ -11,10 +11,7 @@ import org.jetbrains.kotlin.analyzer.*
 import org.jetbrains.kotlin.analyzer.common.CommonAnalysisParameters
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.builtins.jvm.JvmBuiltIns
-import org.jetbrains.kotlin.caches.resolve.CompositeAnalyzerServices
-import org.jetbrains.kotlin.caches.resolve.CompositeResolverForModuleFactory
-import org.jetbrains.kotlin.caches.resolve.KotlinCacheService
-import org.jetbrains.kotlin.caches.resolve.resolution
+import org.jetbrains.kotlin.caches.resolve.*
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.context.withModule
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -102,7 +99,7 @@ class IdeaResolverForProject(
                 }
                 tryGetResolverForModuleWithResolutionAnchorFallback(targetModuleInfo, referencingModuleInfo)
             },
-            loadBuiltInsFromDependencies = true
+            isModuleAnStdlib = { it is KotlinStdlibInfo }
         )
 
         val commonPlatformParameters = CommonAnalysisParameters(
@@ -133,6 +130,7 @@ class IdeaResolverForProject(
 
         fun getOrCreateIfNeeded(module: IdeaModuleInfo): KotlinBuiltIns = projectContextFromSdkResolver.storageManager.compute {
             val sdk = resolverForSdk.sdkDependency(module)
+            val stdlib = module.dependencies().lazyClosure { it.dependencies() }.firstOrNull { it is KotlinStdlibInfo }
 
             val key = module.platform.idePlatformKind.resolution.getKeyForBuiltIns(module, sdk)
             val cachedBuiltIns = cache[key]
@@ -146,10 +144,12 @@ class IdeaResolverForProject(
             if (newBuiltIns is JvmBuiltIns) {
                 // SDK should be present, otherwise we wouldn't have created JvmBuiltIns in createBuiltIns
                 val sdkDescriptor = resolverForSdk.descriptorForModule(sdk!!)
+                val stdlibDescriptor = stdlib?.let { resolverForSdk.descriptorForModule(it) }!!
 
                 val isAdditionalBuiltInsFeaturesSupported = module.supportsAdditionalBuiltInsMembers(projectContextFromSdkResolver.project)
 
                 newBuiltIns.initialize(sdkDescriptor, isAdditionalBuiltInsFeaturesSupported)
+                if (newBuiltIns.kind == JvmBuiltIns.Kind.FROM_DEPENDENCIES) newBuiltIns.builtInsModule = stdlibDescriptor
             }
 
             return@compute newBuiltIns
