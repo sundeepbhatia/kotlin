@@ -44,7 +44,7 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
 
         override fun visitCall(expression: IrCall): IrExpression {
             if (expression.accept(IrCompileTimeChecker(), null)) {
-                return interpreter.interpret(expression).report(expression)
+                return interpreter.interpret(expression, irFile).report(expression)
             }
             return expression
         }
@@ -59,7 +59,7 @@ class CompileTimeCalculationLowering(val context: CommonBackendContext) : FileLo
             if (isConst && !isCompileTimeComputable) {
                 context.report(expression, irFile, "Const property is used only with functions annotated as CompileTimeCalculation", true)
             } else if (isCompileTimeComputable) {
-                initializer.expression = interpreter.interpret(expression).report(expression)
+                initializer.expression = interpreter.interpret(expression, irFile).report(expression)
             }
             return declaration
         }
