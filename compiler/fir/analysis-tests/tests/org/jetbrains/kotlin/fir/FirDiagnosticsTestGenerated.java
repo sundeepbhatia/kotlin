@@ -1212,6 +1212,29 @@ public class FirDiagnosticsTestGenerated extends AbstractFirDiagnosticsTest {
         }
     }
 
+    @TestMetadata("compiler/fir/analysis-tests/testData/resolve/errors")
+    @TestDataPath("$PROJECT_ROOT")
+    @RunWith(JUnit3RunnerWithInners.class)
+    public static class Errors extends AbstractFirDiagnosticsTest {
+        private void runTest(String testDataFilePath) throws Exception {
+            KotlinTestUtils.runTest(this::doTest, this, testDataFilePath);
+        }
+
+        public void testAllFilesPresentInErrors() throws Exception {
+            KotlinTestUtils.assertAllTestsPresentByMetadataWithExcluded(this.getClass(), new File("compiler/fir/analysis-tests/testData/resolve/errors"), Pattern.compile("^([^.]+)\\.kt$"), null, true);
+        }
+
+        @TestMetadata("noCallName.kt")
+        public void testNoCallName() throws Exception {
+            runTest("compiler/fir/analysis-tests/testData/resolve/errors/noCallName.kt");
+        }
+
+        @TestMetadata("noSelectorExpression.kt")
+        public void testNoSelectorExpression() throws Exception {
+            runTest("compiler/fir/analysis-tests/testData/resolve/errors/noSelectorExpression.kt");
+        }
+    }
+
     @TestMetadata("compiler/fir/analysis-tests/testData/resolve/expresssions")
     @TestDataPath("$PROJECT_ROOT")
     @RunWith(JUnit3RunnerWithInners.class)

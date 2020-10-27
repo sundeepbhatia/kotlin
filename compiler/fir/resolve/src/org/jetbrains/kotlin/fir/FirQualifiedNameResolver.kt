@@ -9,7 +9,7 @@ import org.jetbrains.kotlin.fir.expressions.FirQualifiedAccess
 import org.jetbrains.kotlin.fir.expressions.FirResolvedQualifier
 import org.jetbrains.kotlin.fir.expressions.FirStatement
 import org.jetbrains.kotlin.fir.expressions.builder.buildResolvedQualifier
-import org.jetbrains.kotlin.fir.references.impl.FirSimpleNamedReference
+import org.jetbrains.kotlin.fir.references.FirNamedReference
 import org.jetbrains.kotlin.fir.resolve.BodyResolveComponents
 import org.jetbrains.kotlin.fir.resolve.firSymbolProvider
 import org.jetbrains.kotlin.fir.resolve.transformers.PackageOrClass
@@ -41,7 +41,7 @@ class FirQualifiedNameResolver(private val components: BodyResolveComponents) {
      */
     fun isPotentialQualifierPartPosition() = qualifierStack.size > 1
 
-    fun initProcessingQualifiedAccess(callee: FirSimpleNamedReference) {
+    fun initProcessingQualifiedAccess(callee: FirNamedReference) {
         if (callee.name.isSpecial) {
             qualifierStack.clear()
         } else {
