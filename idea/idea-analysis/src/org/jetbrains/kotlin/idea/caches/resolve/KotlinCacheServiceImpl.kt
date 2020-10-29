@@ -21,7 +21,6 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.roots.ProjectRootModificationTracker
-import com.intellij.openapi.roots.libraries.Library
 import com.intellij.openapi.util.ModificationTracker
 import com.intellij.psi.PsiCodeFragment
 import com.intellij.psi.PsiFile
@@ -37,8 +36,6 @@ import org.jetbrains.kotlin.analyzer.ResolverForProject.Companion.resolverForScr
 import org.jetbrains.kotlin.analyzer.ResolverForProject.Companion.resolverForSdkName
 import org.jetbrains.kotlin.analyzer.ResolverForProject.Companion.resolverForSpecialInfoName
 import org.jetbrains.kotlin.builtins.StandardNames
-import org.jetbrains.kotlin.caches.resolve.CommonMetadataLibraryInfo
-import org.jetbrains.kotlin.caches.resolve.JvmLibraryInfo
 import org.jetbrains.kotlin.caches.resolve.KotlinCacheService
 import org.jetbrains.kotlin.config.LanguageFeature
 import org.jetbrains.kotlin.context.GlobalContext
@@ -192,7 +189,7 @@ class KotlinCacheServiceImpl(val project: Project) : KotlinCacheService {
         val facadeForSdk = ProjectResolutionFacade(
             "facadeForSdk", "$resolverForSdkName with settings=$settings",
             project, sdkContext, settings,
-            moduleFilter = { it is SdkInfo || it is KotlinCoreLibraryInfo },
+            moduleFilter = { it is SdkInfo || it is LibraryInfo && it.isKotlinStdlib(project) },
             dependencies = listOf(
                 LibraryModificationTracker.getInstance(project),
                 ProjectRootModificationTracker.getInstance(project)
@@ -206,7 +203,7 @@ class KotlinCacheServiceImpl(val project: Project) : KotlinCacheService {
             "facadeForLibraries", "$resolverForLibrariesName with settings=$settings",
             project, librariesContext, settings,
             reuseDataFrom = facadeForSdk,
-            moduleFilter = { it is LibraryInfo && it !is KotlinCoreLibraryInfo },
+            moduleFilter = { it is LibraryInfo && !it.isKotlinStdlib(project) },
             invalidateOnOOCB = false,
             dependencies = listOf(
                 LibraryModificationTracker.getInstance(project),
@@ -532,12 +529,3 @@ fun IdeaModuleInfo.supportsAdditionalBuiltInsMembers(project: Project): Boolean 
 }
 
 val IdeaModuleInfo.sdk: Sdk? get() = dependencies().firstIsInstanceOrNull<SdkInfo>()?.sdk
-
-val Library.isKotlinStdlib: Boolean
-    get() = name?.contains("stdlib") == true
-
-val Library.isKotlinReflect: Boolean
-    get() = name?.contains("reflect") == true
-
-val Library.isKotlinCoreLibrary: Boolean
-    get() = isKotlinStdlib || isKotlinReflect

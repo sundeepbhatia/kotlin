@@ -17,13 +17,9 @@ import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.builtins.jvm.JvmBuiltIns
 import org.jetbrains.kotlin.context.ProjectContext
-import org.jetbrains.kotlin.idea.caches.project.KotlinReflectLibraryInfo
-import org.jetbrains.kotlin.idea.caches.project.KotlinStdlibInfo
 import org.jetbrains.kotlin.idea.caches.project.LibraryInfo
 import org.jetbrains.kotlin.idea.caches.project.SdkInfo
 import org.jetbrains.kotlin.idea.caches.resolve.BuiltInsCacheKey
-import org.jetbrains.kotlin.idea.caches.resolve.isKotlinReflect
-import org.jetbrains.kotlin.idea.caches.resolve.isKotlinStdlib
 import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.platform.impl.JvmIdePlatformKind
 import org.jetbrains.kotlin.platform.jvm.JvmPlatforms
@@ -48,8 +44,6 @@ class JvmPlatformKindResolution : IdePlatformKindResolution {
         get() = null
 
     override fun createLibraryInfo(project: Project, library: Library): List<LibraryInfo> = when {
-        library.isKotlinStdlib -> listOf(KotlinStdlibInfo(project, library, JvmPlatforms.defaultJvmPlatform))
-        library.isKotlinReflect -> listOf(KotlinReflectLibraryInfo(project, library, JvmPlatforms.defaultJvmPlatform))
         else -> listOf(JvmLibraryInfo(project, library))
     }
 
@@ -59,10 +53,16 @@ class JvmPlatformKindResolution : IdePlatformKindResolution {
         return if (sdkInfo != null && moduleInfo !is SdkInfo) CacheKeyBySdk(sdkInfo.sdk) else BuiltInsCacheKey.DefaultBuiltInsKey
     }
 
-    override fun createBuiltIns(moduleInfo: ModuleInfo, projectContext: ProjectContext, sdkDependency: SdkInfo?): KotlinBuiltIns {
-        return if (sdkDependency != null && moduleInfo !is SdkInfo)
+    override fun createBuiltIns(
+        moduleInfo: ModuleInfo,
+        projectContext: ProjectContext,
+        sdkDependency: SdkInfo?,
+        stdlibDependency: LibraryInfo?,
+    ): KotlinBuiltIns {
+        // For JVM modules without stdlib dependency (i.e. modules not under content root)
+        // should probably still be JvmBuiltins from class loader, not default
+        return if (sdkDependency != null && moduleInfo !is SdkInfo && stdlibDependency != null)
             JvmBuiltIns(projectContext.storageManager, JvmBuiltIns.Kind.FROM_DEPENDENCIES)
-//            JvmBuiltIns(projectContext.storageManager, JvmBuiltIns.Kind.FROM_CLASS_LOADER)
         else
             DefaultBuiltIns.Instance
     }

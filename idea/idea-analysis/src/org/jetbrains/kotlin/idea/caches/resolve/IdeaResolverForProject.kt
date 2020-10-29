@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.platform.jvm.isJvm
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.ResolutionAnchorProvider
 import org.jetbrains.kotlin.resolve.jvm.JvmPlatformParameters
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class IdeaResolverForProject(
     debugName: String,
@@ -99,7 +100,7 @@ class IdeaResolverForProject(
                 }
                 tryGetResolverForModuleWithResolutionAnchorFallback(targetModuleInfo, referencingModuleInfo)
             },
-            isModuleAnStdlib = { it is KotlinStdlibInfo }
+            isModuleAnStdlib = { it is LibraryInfo && it.isKotlinStdlib(projectContext.project) }
         )
 
         val commonPlatformParameters = CommonAnalysisParameters(
@@ -130,7 +131,9 @@ class IdeaResolverForProject(
 
         fun getOrCreateIfNeeded(module: IdeaModuleInfo): KotlinBuiltIns = projectContextFromSdkResolver.storageManager.compute {
             val sdk = resolverForSdk.sdkDependency(module)
-            val stdlib = module.dependencies().lazyClosure { it.dependencies() }.firstOrNull { it is KotlinStdlibInfo }
+            val stdlib = module.dependencies().lazyClosure { it.dependencies() }.firstOrNull {
+                it is LibraryInfo && it.isKotlinStdlib(projectContextFromSdkResolver.project)
+            } as? LibraryInfo
 
             val key = module.platform.idePlatformKind.resolution.getKeyForBuiltIns(module, sdk)
             val cachedBuiltIns = cache[key]
@@ -138,7 +141,7 @@ class IdeaResolverForProject(
 
             // Note #1: we can't use .getOrPut, because we have to put builtIns into map *before* initialization
             // Note #2: it's OK to put not-initialized built-ins into public map, because access to [cache] is guarded by storageManager.lock
-            val newBuiltIns = module.platform.idePlatformKind.resolution.createBuiltIns(module, projectContextFromSdkResolver, sdk)
+            val newBuiltIns = module.platform.idePlatformKind.resolution.createBuiltIns(module, projectContextFromSdkResolver, sdk, stdlib)
             cache[key] = newBuiltIns
 
             if (newBuiltIns is JvmBuiltIns) {

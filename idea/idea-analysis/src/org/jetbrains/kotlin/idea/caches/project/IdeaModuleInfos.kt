@@ -353,6 +353,10 @@ abstract class LibraryInfo(override val project: Project, val library: Library) 
         val result = LinkedHashSet<IdeaModuleInfo>()
         result.add(this)
 
+        // Stdlib doesn't depend on anything
+        if (this.isKotlinStdlib(project))
+            return result.toList()
+
         val (libraries, sdks) = LibraryDependenciesCache.getInstance(project).getLibrariesAndSdksUsedWith(this)
 
         result.addAll(sdks)
@@ -396,17 +400,6 @@ sealed class KotlinCoreLibraryInfo(project: Project, library: Library, override 
     }
 
     protected abstract fun filterIncorrectDependencies(approximateDependencies: List<IdeaModuleInfo>): List<IdeaModuleInfo>
-}
-
-class KotlinStdlibInfo(project: Project, library: Library, platform: TargetPlatform) : KotlinCoreLibraryInfo(project, library, platform) {
-    // stdlib doesn't depend on anything
-    override fun filterIncorrectDependencies(approximateDependencies: List<IdeaModuleInfo>): List<IdeaModuleInfo> = listOf(this)
-}
-
-class KotlinReflectLibraryInfo(project: Project, library: Library, platform: TargetPlatform) :
-    KotlinCoreLibraryInfo(project, library, platform) {
-    override fun filterIncorrectDependencies(approximateDependencies: List<IdeaModuleInfo>): List<IdeaModuleInfo> =
-        approximateDependencies.filter { it === this || it is KotlinStdlibInfo }
 }
 
 data class LibrarySourceInfo(override val project: Project, val library: Library, override val binariesModuleInfo: BinaryModuleInfo) :

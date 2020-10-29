@@ -53,7 +53,12 @@ class JsPlatformKindResolution : IdePlatformKindResolution {
         return BuiltInsCacheKey.DefaultBuiltInsKey
     }
 
-    override fun createBuiltIns(moduleInfo: ModuleInfo, projectContext: ProjectContext, sdkDependency: SdkInfo?): KotlinBuiltIns {
+    override fun createBuiltIns(
+        moduleInfo: ModuleInfo,
+        projectContext: ProjectContext,
+        sdkDependency: SdkInfo?,
+        stdlibDependency: LibraryInfo?,
+    ): KotlinBuiltIns {
         return DefaultBuiltIns.Instance
     }
 

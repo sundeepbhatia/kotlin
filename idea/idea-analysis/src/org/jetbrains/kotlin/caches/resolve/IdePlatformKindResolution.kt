@@ -41,7 +41,12 @@ interface IdePlatformKindResolution {
     val kind: IdePlatformKind<*>
 
     fun getKeyForBuiltIns(moduleInfo: ModuleInfo, sdkInfo: SdkInfo?): BuiltInsCacheKey
-    fun createBuiltIns(moduleInfo: ModuleInfo, projectContext: ProjectContext, sdkDependency: SdkInfo?): KotlinBuiltIns
+    fun createBuiltIns(
+        moduleInfo: ModuleInfo,
+        projectContext: ProjectContext,
+        sdkDependency: SdkInfo?,
+        stdlibDependency: LibraryInfo?
+    ): KotlinBuiltIns
 
     fun createResolverForModuleFactory(
         settings: PlatformAnalysisParameters,
