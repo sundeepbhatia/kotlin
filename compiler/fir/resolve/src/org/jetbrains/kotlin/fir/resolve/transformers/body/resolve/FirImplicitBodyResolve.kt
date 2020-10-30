@@ -212,7 +212,7 @@ private class ReturnTypeCalculatorWithJump(
         }
 
         if (declaration.isIntersectionOverride) {
-            val result = tryCalculateReturnType(declaration.symbol.overriddenSymbol!!.fir)
+            val result = tryCalculateReturnType(declaration.symbol.baseForIntersectionOverride!!.fir)
             declaration.replaceReturnTypeRef(result)
             return result
         }
