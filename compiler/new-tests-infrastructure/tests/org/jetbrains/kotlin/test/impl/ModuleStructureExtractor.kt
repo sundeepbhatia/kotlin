@@ -56,6 +56,7 @@ class ModuleStructureExtractor private constructor(
     private var filesOfCurrentModule = mutableListOf<TestFile>()
 
     private var currentFileName: String? = null
+    private var firstFileInModule: Boolean = true
     private var linesOfCurrentFile = mutableListOf<String>()
     private var startLineNumberOfCurrentFile = 0
 
@@ -73,7 +74,10 @@ class ModuleStructureExtractor private constructor(
             val lines = testDataFile.readLines()
             lines.forEachIndexed { lineNumber, line ->
                 val rawDirective = RegisteredDirectivesParser.parseDirective(line)
-                if (tryParseStructureDirective(rawDirective, lineNumber + 1)) return@forEachIndexed
+                if (tryParseStructureDirective(rawDirective, lineNumber + 1)) {
+                    linesOfCurrentFile.add(line)
+                    return@forEachIndexed
+                }
                 tryParseRegularDirective(rawDirective)
                 linesOfCurrentFile.add(line)
             }
@@ -194,6 +198,7 @@ class ModuleStructureExtractor private constructor(
             directives = directivesBuilder.build(),
             languageVersionSettings = currentModuleLanguageVersionSettingsBuilder.build()
         )
+        firstFileInModule = true
         resetModuleCaches()
     }
 
@@ -206,10 +211,12 @@ class ModuleStructureExtractor private constructor(
                 startLineNumberInOriginalFile = startLineNumberOfCurrentFile
             )
         )
+        firstFileInModule = false
         resetFileCaches()
     }
 
     private fun resetModuleCaches() {
+        firstFileInModule = true
         currentModuleName = null
         currentModuleTargetPlatform = null
         currentModuleFrontendKind = null
@@ -221,7 +228,9 @@ class ModuleStructureExtractor private constructor(
     }
 
     private fun resetFileCaches() {
-        linesOfCurrentFile = mutableListOf()
+        if (!firstFileInModule) {
+            linesOfCurrentFile = mutableListOf()
+        }
         currentFileName = null
         startLineNumberOfCurrentFile = 0
     }
