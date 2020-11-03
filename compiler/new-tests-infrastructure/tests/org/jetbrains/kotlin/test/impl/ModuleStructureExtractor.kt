@@ -3,10 +3,11 @@
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
-package org.jetbrains.kotlin.test.directives
+package org.jetbrains.kotlin.test.impl
 
 import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.test.builders.LanguageVersionSettingsBuilder
+import org.jetbrains.kotlin.test.directives.*
 import org.jetbrains.kotlin.test.model.*
 import org.jetbrains.kotlin.test.services.*
 import org.jetbrains.kotlin.utils.DFS
@@ -57,20 +58,20 @@ class ModuleStructureExtractor private constructor(
     private var linesOfCurrentFile = mutableListOf<String>()
     private var startLineNumberOfCurrentFile = 0
 
-    private var directivesBuilder = RegisteredDirectivesBuilder(directivesContainer, assertions)
+    private var directivesBuilder = RegisteredDirectivesParser(directivesContainer, assertions)
 
     private var globalDirectives: RegisteredDirectives? = null
 
     private val modules = mutableListOf<TestModule>()
 
-    private val moduleDirectiveBuilder = RegisteredDirectivesBuilder(ModuleStructureDirectives, assertions)
+    private val moduleDirectiveBuilder = RegisteredDirectivesParser(ModuleStructureDirectives, assertions)
 
     fun splitTestDataByModules(): TestModuleStructure {
         for (testDataFile in testDataFiles) {
             currentTestDataFile = testDataFile
             val lines = testDataFile.readLines()
             lines.forEachIndexed { lineNumber, line ->
-                val rawDirective = RegisteredDirectivesBuilder.parseDirective(line)
+                val rawDirective = RegisteredDirectivesParser.parseDirective(line)
                 if (tryParseStructureDirective(rawDirective, lineNumber + 1)) return@forEachIndexed
                 tryParseRegularDirective(rawDirective)
                 linesOfCurrentFile.add(line)
@@ -114,7 +115,7 @@ class ModuleStructureExtractor private constructor(
     /*
      * returns [true] means that passed directive was module directive and line is processed
      */
-    private fun tryParseStructureDirective(rawDirective: RegisteredDirectivesBuilder.RawDirective?, lineNumber: Int): Boolean {
+    private fun tryParseStructureDirective(rawDirective: RegisteredDirectivesParser.RawDirective?, lineNumber: Int): Boolean {
         if (rawDirective == null) return false
         val (directive, values) = moduleDirectiveBuilder.convertToRegisteredDirective(rawDirective) ?: return false
         when (directive) {
@@ -215,7 +216,7 @@ class ModuleStructureExtractor private constructor(
         currentModuleLanguageVersionSettingsBuilder = initLanguageSettingsBuilder()
         filesOfCurrentModule = mutableListOf()
         dependenciesOfCurrentModule = mutableListOf()
-        directivesBuilder = RegisteredDirectivesBuilder(directivesContainer, assertions)
+        directivesBuilder = RegisteredDirectivesParser(directivesContainer, assertions)
     }
 
     private fun resetFileCaches() {
@@ -224,7 +225,7 @@ class ModuleStructureExtractor private constructor(
         startLineNumberOfCurrentFile = 0
     }
 
-    private fun tryParseRegularDirective(rawDirective: RegisteredDirectivesBuilder.RawDirective?) {
+    private fun tryParseRegularDirective(rawDirective: RegisteredDirectivesParser.RawDirective?) {
         if (rawDirective == null) return
         val parsedDirective = directivesBuilder.convertToRegisteredDirective(rawDirective) ?: return
         if (parsedDirective.directive in LanguageSettingsDirectives) {
@@ -233,7 +234,7 @@ class ModuleStructureExtractor private constructor(
         directivesBuilder.addParsedDirective(parsedDirective)
     }
 
-    private fun configureLanguageDirective(rawDirective: RegisteredDirectivesBuilder.RawDirective) {
+    private fun configureLanguageDirective(rawDirective: RegisteredDirectivesParser.RawDirective) {
         // TODO: implement proper language settings parsing
     }
 

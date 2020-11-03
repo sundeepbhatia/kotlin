@@ -3,11 +3,12 @@
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
-package org.jetbrains.kotlin.test.directives
+package org.jetbrains.kotlin.test.impl
 
+import org.jetbrains.kotlin.test.directives.*
 import org.jetbrains.kotlin.test.services.Assertions
 
-class RegisteredDirectivesBuilder(private val container: DirectivesContainer, private val assertions: Assertions) {
+class RegisteredDirectivesParser(private val container: DirectivesContainer, private val assertions: Assertions) {
     companion object {
         private val DIRECTIVE_PATTERN = Regex("""^//\s*[!]?([A-Z_]+)(:[ \t]*(.*))?$""")
         private val SPACES_PATTERN = Regex("""[,]?[ \t]+""")

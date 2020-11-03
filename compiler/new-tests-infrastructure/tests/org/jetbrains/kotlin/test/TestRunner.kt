@@ -5,7 +5,7 @@
 
 package org.jetbrains.kotlin.test
 
-import org.jetbrains.kotlin.test.directives.ModuleStructureExtractor
+import org.jetbrains.kotlin.test.impl.ModuleStructureExtractor
 import org.jetbrains.kotlin.test.model.*
 import org.jetbrains.kotlin.test.services.DependencyProviderImpl
 import org.jetbrains.kotlin.test.services.assertions
