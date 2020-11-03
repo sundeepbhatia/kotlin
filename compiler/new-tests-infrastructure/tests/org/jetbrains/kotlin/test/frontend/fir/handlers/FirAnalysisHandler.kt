@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.test.model.FrontendKind
 import org.jetbrains.kotlin.test.model.FrontendResultsHandler
 import org.jetbrains.kotlin.test.model.ResultingArtifact
 import org.jetbrains.kotlin.test.model.TestModule
+import java.io.File
 
 abstract class FirAnalysisHandler(
     testServices: TestServices
@@ -20,4 +21,7 @@ abstract class FirAnalysisHandler(
     }
 
     abstract fun processModule(module: TestModule, info: FirSourceArtifact)
+
+    protected val File.nameWithoutFirExtension: String
+        get() = nameWithoutExtension.removeSuffix(".fir")
 }

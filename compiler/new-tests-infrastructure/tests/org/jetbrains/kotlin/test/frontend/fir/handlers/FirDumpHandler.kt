@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.test.model.TestModule
 import org.jetbrains.kotlin.test.services.TestServices
 import org.jetbrains.kotlin.test.util.MultiModuleInfoDumper
 import org.jetbrains.kotlin.test.util.MultiModuleInfoDumperImpl
+import java.io.File
 
 class FirDumpHandler(
     testServices: TestServices
@@ -26,7 +27,7 @@ class FirDumpHandler(
     override fun processAfterAllModules() {
         // TODO: change according to multiple testdata files
         val testDataFile = moduleStructure.originalTestDataFiles.first()
-        val expectedFile = testDataFile.parentFile.resolve("${testDataFile.nameWithoutExtension}.fir")
+        val expectedFile = testDataFile.parentFile.resolve("${testDataFile.nameWithoutFirExtension}.fir")
         val actualText = dumper.generateResultingDump()
         assertions.assertEqualsToFile("Content is not equal", expectedFile, actualText)
     }
