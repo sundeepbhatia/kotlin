@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.test.directives.ModuleStructureExtractor
 import org.jetbrains.kotlin.test.model.*
 import org.jetbrains.kotlin.test.services.DependencyProviderImpl
 import org.jetbrains.kotlin.test.services.assertions
+import org.jetbrains.kotlin.test.services.globalMetadataInfoHandler
 import org.jetbrains.kotlin.test.services.registerDependencyProvider
 
 class TestRunner(private val testConfiguration: TestConfiguration) {
@@ -77,6 +78,9 @@ class TestRunner(private val testConfiguration: TestConfiguration) {
         }
         for (artifactHandler in testConfiguration.getAllArtifactHandlers()) {
             withAssertionCatching { artifactHandler.processAfterAllModules() }
+        }
+        withAssertionCatching {
+            testConfiguration.testServices.globalMetadataInfoHandler.compareAllMetaDataInfos()
         }
         if (failedException != null) {
             failedAssertions += AssertionError("Exception was thrown", failedException)

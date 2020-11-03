@@ -60,6 +60,8 @@ class TestConfigurationImpl(
             register(DefaultsProvider::class, defaultsProvider)
 
             register(DefaultRegisteredDirectivesProvider::class, DefaultRegisteredDirectivesProvider(this, defaultRegisteredDirectives))
+
+            register(GlobalMetadataInfoHandler::class, GlobalMetadataInfoHandler(this))
         }
 
         this.directives = when (allDirectives.size) {
