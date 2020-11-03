@@ -25,6 +25,9 @@ class TestRunner(private val testConfiguration: TestConfiguration) {
             services.register(TestModuleStructure::class, it)
         }
 
+        val globalMetadataInfoHandler = testConfiguration.testServices.globalMetadataInfoHandler
+        globalMetadataInfoHandler.parseExistingMetadataInfosFromAllSources()
+
         val modules = moduleStructure.modules
         val dependencyProvider = DependencyProviderImpl(services, modules)
         services.registerDependencyProvider(dependencyProvider)
@@ -80,7 +83,7 @@ class TestRunner(private val testConfiguration: TestConfiguration) {
             withAssertionCatching { artifactHandler.processAfterAllModules() }
         }
         withAssertionCatching {
-            testConfiguration.testServices.globalMetadataInfoHandler.compareAllMetaDataInfos()
+            globalMetadataInfoHandler.compareAllMetaDataInfos()
         }
         if (failedException != null) {
             failedAssertions += AssertionError("Exception was thrown", failedException)

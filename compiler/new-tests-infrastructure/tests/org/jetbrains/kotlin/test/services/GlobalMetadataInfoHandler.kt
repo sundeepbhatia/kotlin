@@ -5,14 +5,31 @@
 
 package org.jetbrains.kotlin.test.services
 
+import org.jetbrains.kotlin.codeMetaInfo.CodeMetaInfoParser
 import org.jetbrains.kotlin.codeMetaInfo.CodeMetaInfoRenderer
 import org.jetbrains.kotlin.codeMetaInfo.model.CodeMetaInfo
+import org.jetbrains.kotlin.codeMetaInfo.model.ParsedCodeMetaInfo
 import org.jetbrains.kotlin.test.model.TestFile
 import org.jetbrains.kotlin.test.model.moduleStructure
 
 class GlobalMetadataInfoHandler(private val testServices: TestServices) : TestService {
+    private lateinit var existingInfosPerFile: Map<TestFile, List<ParsedCodeMetaInfo>>
+
     private val infosPerFile: MutableMap<TestFile, MutableList<CodeMetaInfo>> =
         mutableMapOf<TestFile, MutableList<CodeMetaInfo>>().withDefault { mutableListOf() }
+
+    @OptIn(ExperimentalStdlibApi::class)
+    fun parseExistingMetadataInfosFromAllSources() {
+        existingInfosPerFile = buildMap {
+            for (file in testServices.moduleStructure.modules.flatMap { it.files }) {
+                put(file, CodeMetaInfoParser.getCodeMetaInfoFromText(file.originalContent))
+            }
+        }
+    }
+
+    fun getExistingMetadataForFile(file: TestFile): List<ParsedCodeMetaInfo> {
+        return existingInfosPerFile.getValue(file)
+    }
 
     fun addMetadataInfosForFile(file: TestFile, codeMetaInfos: List<CodeMetaInfo>) {
         val infos = infosPerFile.getOrPut(file) { mutableListOf() }
