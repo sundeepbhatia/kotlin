@@ -29,7 +29,7 @@ class TestConfigurationBuilder {
     private val backendHandlers: MutableList<Constructor<BackendInitialInfoHandler<*>>> = mutableListOf()
     private val artifactsHandlers: MutableList<Constructor<ArtifactsResultsHandler<*>>> = mutableListOf()
 
-    private val sourcePreprocessors: MutableList<SourceFilePreprocessor> = mutableListOf()
+    private val sourcePreprocessors: MutableList<Constructor<SourceFilePreprocessor>> = mutableListOf()
     private val environmentConfigurators: MutableList<Constructor<EnvironmentConfigurator>> = mutableListOf()
 
     private val directives: MutableList<DirectivesContainer> = mutableListOf()
@@ -63,7 +63,7 @@ class TestConfigurationBuilder {
         artifactsHandlers += constructor
     }
 
-    fun useSourcePreprocessor(vararg preprocessors: SourceFilePreprocessor) {
+    fun useSourcePreprocessor(vararg preprocessors: Constructor<SourceFilePreprocessor>) {
         sourcePreprocessors += preprocessors
     }
 

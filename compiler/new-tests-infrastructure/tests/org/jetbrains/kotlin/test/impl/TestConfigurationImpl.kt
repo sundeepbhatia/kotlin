@@ -28,7 +28,7 @@ class TestConfigurationImpl(
     backendHandlers: List<Constructor<BackendInitialInfoHandler<*>>>,
     artifactsHandlers: List<Constructor<ArtifactsResultsHandler<*>>>,
 
-    sourcePreprocessors: List<SourceFilePreprocessor>,
+    sourcePreprocessors: List<Constructor<SourceFilePreprocessor>>,
     environmentConfigurators: List<Constructor<EnvironmentConfigurator>>,
     directives: List<DirectivesContainer>,
     override val defaultRegisteredDirectives: RegisteredDirectives
@@ -42,7 +42,7 @@ class TestConfigurationImpl(
         allDirectives += defaultDirectiveContainers
 
         testServices.apply {
-            val sourceFileProvider = SourceFileProviderImpl(sourcePreprocessors)
+            val sourceFileProvider = SourceFileProviderImpl(sourcePreprocessors.map { it.invoke(this) })
             register(SourceFileProvider::class, sourceFileProvider)
 
             val configurators = environmentConfigurators.map { it.invoke(this) }

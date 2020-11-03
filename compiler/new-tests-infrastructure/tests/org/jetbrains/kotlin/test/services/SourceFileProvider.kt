@@ -12,7 +12,7 @@ import org.jetbrains.kotlin.test.KotlinTestUtils
 import org.jetbrains.kotlin.test.model.TestFile
 import java.io.File
 
-abstract class SourceFilePreprocessor {
+abstract class SourceFilePreprocessor(val testServices: TestServices) {
     abstract fun process(file: TestFile, content: String): String
 }
 
