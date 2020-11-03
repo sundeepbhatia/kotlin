@@ -16,9 +16,11 @@ import org.jetbrains.kotlin.test.builders.testRunner
 import org.jetbrains.kotlin.test.frontend.classic.ClassicFrontend2ClassicBackendConverter
 import org.jetbrains.kotlin.test.frontend.classic.ClassicFrontend2IrConverter
 import org.jetbrains.kotlin.test.frontend.classic.ClassicFrontendFacade
+import org.jetbrains.kotlin.test.frontend.classic.handlers.ClassicDiagnosticsHandler
 import org.jetbrains.kotlin.test.frontend.classic.handlers.DeclarationsDumpHandler
 import org.jetbrains.kotlin.test.frontend.fir.Fir2IrResultsConverter
 import org.jetbrains.kotlin.test.frontend.fir.FirFrontendFacade
+import org.jetbrains.kotlin.test.frontend.fir.handlers.FirDiagnosticsHandler
 import org.jetbrains.kotlin.test.frontend.fir.handlers.FirDumpHandler
 import org.jetbrains.kotlin.test.model.BackendKind
 import org.jetbrains.kotlin.test.model.DependencyKind
@@ -66,7 +68,7 @@ class SomeTest {
         useConfigurators(::JvmEnvironmentConfigurator)
 
         useFrontendFacades(::ClassicFrontendFacade)
-        useFrontendHandlers(::DeclarationsDumpHandler)
+        useFrontendHandlers(::DeclarationsDumpHandler, ::ClassicDiagnosticsHandler)
     }
 
     @Test
@@ -88,7 +90,7 @@ class SomeTest {
         useConfigurators(::JvmEnvironmentConfigurator)
 
         useFrontendFacades(::ClassicFrontendFacade)
-        useFrontendHandlers(::DeclarationsDumpHandler)
+        useFrontendHandlers(::DeclarationsDumpHandler, ::ClassicDiagnosticsHandler)
         useFrontend2BackendConverters(::ClassicFrontend2ClassicBackendConverter, ::ClassicFrontend2IrConverter)
         useBackendFacades(::ClassicJvmBackendFacade, ::JvmIrBackendFacade)
         useArtifactsHandlers(::JvmBoxRunner)
@@ -131,7 +133,7 @@ class SomeTest {
         useConfigurators(::JvmEnvironmentConfigurator)
 
         useFrontendFacades(::FirFrontendFacade)
-        useFrontendHandlers(::FirDumpHandler)
+        useFrontendHandlers(::FirDumpHandler, ::FirDiagnosticsHandler)
         useFrontend2BackendConverters(::Fir2IrResultsConverter)
         useBackendFacades(::JvmIrBackendFacade)
         useArtifactsHandlers(::JvmBoxRunner)
@@ -173,7 +175,7 @@ class SomeTest {
 
         useConfigurators(::JsEnvironmentConfigurator)
         useFrontendFacades(::ClassicFrontendFacade)
-        useFrontendHandlers(::DeclarationsDumpHandler)
+        useFrontendHandlers(::DeclarationsDumpHandler, ::ClassicDiagnosticsHandler)
     }
 
     @Test

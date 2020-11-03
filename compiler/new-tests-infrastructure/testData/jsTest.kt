@@ -9,7 +9,7 @@ interface I {
 
 class B : A(), I
 
-fun typeOf(x: dynamic): String = js("typeof x")
+fun typeOf(<!UNUSED_PARAMETER("x")!>x<!>: dynamic): String = js("typeof x")
 
 fun box(): String {
     val b = B()

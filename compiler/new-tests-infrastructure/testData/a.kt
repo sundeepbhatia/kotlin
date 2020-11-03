@@ -18,3 +18,7 @@ public class Utils {
 fun test() = foo().length
 
 fun test_2() = Utils.create()
+
+fun test_3() {
+    return <!TYPE_MISMATCH("Unit; String")!>""<!>
+}

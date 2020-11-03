@@ -11,3 +11,6 @@ FILE: a.kt
     public final fun test_2(): R|ft<kotlin/String, kotlin/String?>!| {
         ^test_2 Q|Utils|.R|/Utils.create|()
     }
+    public final fun test_3(): R|kotlin/Unit| {
+        ^test_3 String()
+    }
