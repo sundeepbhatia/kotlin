@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.test.builders.Constructor
 import org.jetbrains.kotlin.test.directives.ComposedDirectivesContainer
 import org.jetbrains.kotlin.test.directives.DirectivesContainer
 import org.jetbrains.kotlin.test.directives.RegisteredDirectives
+import org.jetbrains.kotlin.test.frontend.preprocessors.MetaInfosCleanupPreprocessor
 import org.jetbrains.kotlin.test.model.*
 import org.jetbrains.kotlin.test.services.*
 import org.jetbrains.kotlin.test.services.configuration.EnvironmentConfigurator
@@ -33,6 +34,10 @@ class TestConfigurationImpl(
     directives: List<DirectivesContainer>,
     override val defaultRegisteredDirectives: RegisteredDirectives
 ) : TestConfiguration() {
+    companion object {
+        private val DEFAULT_PREPROCESSORS: List<Constructor<SourceFilePreprocessor>> = listOf(::MetaInfosCleanupPreprocessor)
+    }
+
     override val rootDisposable: Disposable = TestDisposable()
     override val testServices: TestServices = TestServices()
     override val directives: DirectivesContainer
@@ -42,7 +47,12 @@ class TestConfigurationImpl(
         allDirectives += defaultDirectiveContainers
 
         testServices.apply {
-            val sourceFileProvider = SourceFileProviderImpl(sourcePreprocessors.map { it.invoke(this) })
+            @OptIn(ExperimentalStdlibApi::class)
+            val sourceFilePreprocessors = buildList {
+                addAll(DEFAULT_PREPROCESSORS.map { it.invoke(this@apply) })
+                sourcePreprocessors.map { it.invoke(this@apply) }
+            }
+            val sourceFileProvider = SourceFileProviderImpl(sourceFilePreprocessors)
             register(SourceFileProvider::class, sourceFileProvider)
 
             val configurators = environmentConfigurators.map { it.invoke(this) }
