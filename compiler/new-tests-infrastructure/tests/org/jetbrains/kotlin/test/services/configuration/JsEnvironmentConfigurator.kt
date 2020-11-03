@@ -11,9 +11,9 @@ import org.jetbrains.kotlin.js.config.JsConfig
 import org.jetbrains.kotlin.serialization.js.ModuleKind
 import org.jetbrains.kotlin.test.directives.DirectivesContainer
 import org.jetbrains.kotlin.test.directives.SimpleDirectivesContainer
-import org.jetbrains.kotlin.test.directives.joinToArrayString
 import org.jetbrains.kotlin.test.model.TestModule
 import org.jetbrains.kotlin.test.services.TestServices
+import org.jetbrains.kotlin.test.util.StringUtils.joinToArrayString
 
 class JsEnvironmentConfigurator(testServices: TestServices) : EnvironmentConfigurator(testServices) {
     override val directivesContainer: DirectivesContainer

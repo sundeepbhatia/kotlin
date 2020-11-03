@@ -17,4 +17,7 @@ object StringUtils {
     fun String.convertLineSeparators(separator: String = DEFAULT_LINE_SEPARATOR): String {
         return replace(Regex.fromLiteral("\r\n|\r|\n"), separator)
     }
+
+    fun Iterable<*>.joinToArrayString(): String = joinToString(separator = ", ", prefix = "[", postfix = "]")
+    fun Array<*>.joinToArrayString(): String = joinToString(separator = ", ", prefix = "[", postfix = "]")
 }

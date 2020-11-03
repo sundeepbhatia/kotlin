@@ -7,6 +7,7 @@ package org.jetbrains.kotlin.test.impl
 
 import org.jetbrains.kotlin.test.directives.*
 import org.jetbrains.kotlin.test.services.Assertions
+import org.jetbrains.kotlin.test.util.StringUtils.joinToArrayString
 
 class RegisteredDirectivesParser(private val container: DirectivesContainer, private val assertions: Assertions) {
     companion object {

@@ -5,6 +5,8 @@
 
 package org.jetbrains.kotlin.test.directives
 
+import org.jetbrains.kotlin.test.util.StringUtils.joinToArrayString
+
 // --------------------------- Directive declaration ---------------------------
 
 sealed class Directive(val name: String, val description: String) {

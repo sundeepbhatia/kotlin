@@ -20,13 +20,13 @@ import org.jetbrains.kotlin.test.TestJdkKind
 import org.jetbrains.kotlin.test.directives.DirectivesContainer
 import org.jetbrains.kotlin.test.directives.RegisteredDirectives
 import org.jetbrains.kotlin.test.directives.SimpleDirectivesContainer
-import org.jetbrains.kotlin.test.directives.joinToArrayString
 import org.jetbrains.kotlin.test.model.BackendKind
 import org.jetbrains.kotlin.test.model.DependencyKind
 import org.jetbrains.kotlin.test.model.TestModule
 import org.jetbrains.kotlin.test.services.*
 import org.jetbrains.kotlin.test.services.jvm.CompiledJarManager
 import org.jetbrains.kotlin.test.services.jvm.compiledJarManager
+import org.jetbrains.kotlin.test.util.StringUtils.joinToArrayString
 import java.io.File
 
 class JvmEnvironmentConfigurator(testServices: TestServices) : EnvironmentConfigurator(testServices) {
