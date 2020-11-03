@@ -82,12 +82,9 @@ data class TestModule(
     }
 }
 
-// TODO: maybe String or File will be more useful
-typealias FileContent = List<String>
-
 data class TestFile(
     val name: String,
-    val content: FileContent,
+    val originalContent: String,
     val originalFile: File,
     val startLineNumberInOriginalFile: Int // line count starts with 0
 )

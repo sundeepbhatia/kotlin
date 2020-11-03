@@ -9,12 +9,11 @@ import com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.checkers.TestCheckerUtil
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.test.KotlinTestUtils
-import org.jetbrains.kotlin.test.model.FileContent
 import org.jetbrains.kotlin.test.model.TestFile
 import java.io.File
 
 abstract class SourceFilePreprocessor {
-    abstract fun process(file: TestFile, content: FileContent): FileContent
+    abstract fun process(file: TestFile, content: String): String
 }
 
 abstract class SourceFileProvider : TestService {
@@ -54,9 +53,9 @@ class SourceFileProviderImpl(val preprocessors: List<SourceFilePreprocessor>) : 
     }
 
     private fun generateFinalContent(testFile: TestFile): String {
-        return preprocessors.fold(testFile.content) { content, preprocessor ->
+        return preprocessors.fold(testFile.originalContent) { content, preprocessor ->
             preprocessor.process(testFile, content)
-        }.joinToString(System.lineSeparator())
+        }
     }
 }
 

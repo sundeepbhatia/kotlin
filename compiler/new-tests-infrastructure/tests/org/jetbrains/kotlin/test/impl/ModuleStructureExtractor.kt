@@ -206,7 +206,7 @@ class ModuleStructureExtractor private constructor(
         filesOfCurrentModule.add(
             TestFile(
                 name = currentFileName ?: defaultFileName,
-                content = linesOfCurrentFile,
+                originalContent = linesOfCurrentFile.joinToString(separator = System.lineSeparator(), postfix = System.lineSeparator()),
                 originalFile = currentTestDataFile,
                 startLineNumberInOriginalFile = startLineNumberOfCurrentFile
             )
