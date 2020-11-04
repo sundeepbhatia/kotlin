@@ -160,7 +160,7 @@ class KotlinGradleAppEnvProvider : GradleExecutionEnvironmentProvider {
             @Suppress("UnnecessaryVariable")
 //      @Language("Groovy")
             val initScript = """
-    def gradlePath = '$gradlePath'
+    def gradlePathAndName = '${gradlePath}${project.name}'
     def runAppTaskName = '$runAppTaskName'
     def mainClass = '${mainClass.qualifiedName}'
     def javaExePath = '$javaExePath'
@@ -170,7 +170,7 @@ class KotlinGradleAppEnvProvider : GradleExecutionEnvironmentProvider {
 
     allprojects {
         afterEvaluate { project ->
-            if (project.path == gradlePath) {
+            if (project.path + project.name == gradlePathAndName) {
                 def overwrite = project.tasks.findByName(runAppTaskName) != null
                 project.tasks.create(name: runAppTaskName, overwrite: overwrite, type: JavaExec) {
                     if (javaExePath) executable = javaExePath
