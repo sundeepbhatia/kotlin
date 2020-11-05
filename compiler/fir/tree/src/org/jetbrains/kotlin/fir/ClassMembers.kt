@@ -51,13 +51,7 @@ inline fun <reified D : FirCallableDeclaration<*>> D.originalIfFakeOverride(): D
 inline fun <reified S : FirCallableSymbol<*>> S.originalIfFakeOverride(): S? =
     fir.originalIfFakeOverride()?.symbol as S?
 
-inline fun <reified D : FirCallableDeclaration<*>> D.unwrapFakeOverrideOnceIfNeeded(): D =
-    originalIfFakeOverride() ?: this
-
-inline fun <reified S : FirCallableSymbol<*>> S.unwrapFakeOverrideOnceIfNeeded(): S =
-    fir.unwrapFakeOverrideOnceIfNeeded().symbol as S
-
-inline fun <reified E : FirCallableSymbol<*>> E.unwrapFakeOverrides(): E {
+inline fun <reified D : FirCallableDeclaration<*>> D.unwrapFakeOverrides(): D {
     var current = this
 
     do {
@@ -65,3 +59,5 @@ inline fun <reified E : FirCallableSymbol<*>> E.unwrapFakeOverrides(): E {
         current = next
     } while (true)
 }
+
+inline fun <reified S : FirCallableSymbol<*>> S.unwrapFakeOverrides(): S = fir.unwrapFakeOverrides().symbol as S
