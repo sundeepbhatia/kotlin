@@ -377,7 +377,7 @@ object FirFakeOverrideGenerator {
         receiverTypeRef = baseProperty.receiverTypeRef?.withReplacedConeType(newReceiverType)
     }
 
-    fun createFakeOverrideField(
+    fun createSubstitutionOverrideField(
         session: FirSession,
         baseField: FirField,
         baseSymbol: FirFieldSymbol,
@@ -402,6 +402,8 @@ object FirFakeOverrideGenerator {
             annotations += baseField.annotations
             attributes = baseField.attributes.copy()
             dispatchReceiverType = baseField.dispatchReceiverType
+        }.apply {
+            originalForSubstitutionOverrideAttr = baseField
         }
         return symbol
     }
