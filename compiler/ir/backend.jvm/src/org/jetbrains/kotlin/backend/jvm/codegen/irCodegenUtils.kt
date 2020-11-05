@@ -43,6 +43,7 @@ import org.jetbrains.kotlin.utils.addIfNotNull
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import org.jetbrains.org.objectweb.asm.Opcodes
 import org.jetbrains.org.objectweb.asm.Type
+import org.jetbrains.org.objectweb.asm.commons.Method
 
 class IrFrameMap : FrameMapBase<IrSymbol>() {
     private val typeMap = mutableMapOf<IrSymbol, Type>()
@@ -421,3 +422,13 @@ val IrMemberAccessExpression<*>.psiElement: PsiElement?
 
 fun IrSimpleType.isRawType(): Boolean =
     hasAnnotation(JvmGeneratorExtensions.RAW_TYPE_ANNOTATION_FQ_NAME)
+
+@OptIn(ObsoleteDescriptorBasedAPI::class)
+internal fun classFileContainsMethod(function: IrFunction, context: JvmBackendContext, name: String): Boolean? {
+    val originalDescriptor = context.methodSignatureMapper.mapSignatureWithGeneric(function).asmMethod.descriptor
+    val descriptor = if (function.isSuspend)
+        listOf(*Type.getArgumentTypes(originalDescriptor), Type.getObjectType("kotlin/coroutines/Continuation"))
+            .joinToString(prefix = "(", postfix = ")", separator = "") + AsmTypes.OBJECT_TYPE
+    else originalDescriptor
+    return classFileContainsMethod(function.descriptor, context.state, Method(name, descriptor))
+}
