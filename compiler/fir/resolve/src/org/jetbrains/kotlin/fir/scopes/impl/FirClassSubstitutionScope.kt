@@ -135,7 +135,7 @@ class FirClassSubstitutionScope(
          *   it's safe to cast newTypeParameters to List<FirTypeParameter>
          */
         @Suppress("UNCHECKED_CAST")
-        return FirFakeOverrideGenerator.createFakeOverrideFunction(
+        return FirFakeOverrideGenerator.createSubstitutionOverrideFunction(
             session,
             member,
             original,
@@ -162,8 +162,8 @@ class FirClassSubstitutionScope(
         if (newReturnType == null && newParameterTypes.all { it == null } && newTypeParameters === constructor.typeParameters) {
             return original
         }
-        return FirFakeOverrideGenerator.createFakeOverrideConstructor(
-            FirConstructorSymbol(original.callableId, overriddenSymbol = original),
+        return FirFakeOverrideGenerator.createSubstitutionOverrideConstructor(
+            FirConstructorSymbol(original.callableId),
             session, constructor, dispatchReceiverTypeForSubstitutedMembers,
             newReturnType, newParameterTypes, newTypeParameters, makeExpect, fakeOverrideSubstitution
         ).symbol
@@ -182,7 +182,7 @@ class FirClassSubstitutionScope(
         }
 
         @Suppress("UNCHECKED_CAST")
-        return FirFakeOverrideGenerator.createFakeOverrideProperty(
+        return FirFakeOverrideGenerator.createSubstitutionOverrideProperty(
             session,
             member,
             original,
