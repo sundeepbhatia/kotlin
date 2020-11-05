@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2018 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
@@ -906,16 +906,20 @@ class NewMultiplatformProjectImportingTest : MultiplePluginVersionGradleImportin
         checkProjectStructure(true, false, false) {
             module("KotlinMPPL") {}
             module("KotlinMPPL.commonMain") {
-                platform(CommonPlatforms.defaultCommonPlatform)
+                platform(JsPlatforms.defaultJsPlatform)
+                isCommon(true)
             }
             module("KotlinMPPL.commonTest") {
-                platform(CommonPlatforms.defaultCommonPlatform)
+                platform(JsPlatforms.defaultJsPlatform)
+                isCommon(true)
             }
             module("KotlinMPPL.jsMain") {
                 platform(JsPlatforms.defaultJsPlatform)
+                isCommon(false)
             }
             module("KotlinMPPL.jsTest") {
                 platform(JsPlatforms.defaultJsPlatform)
+                isCommon(false)
             }
         }
     }
