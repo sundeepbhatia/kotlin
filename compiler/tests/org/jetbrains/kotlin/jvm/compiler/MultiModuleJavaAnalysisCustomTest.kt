@@ -17,6 +17,7 @@
 package org.jetbrains.kotlin.jvm.compiler
 
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.ModificationTracker
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.search.DelegatingGlobalSearchScope
 import com.intellij.psi.search.GlobalSearchScope
@@ -25,7 +26,10 @@ import org.jetbrains.kotlin.builtins.KotlinBuiltIns
 import org.jetbrains.kotlin.builtins.jvm.JvmBuiltIns
 import org.jetbrains.kotlin.cli.jvm.compiler.EnvironmentConfigFiles
 import org.jetbrains.kotlin.cli.jvm.compiler.KotlinCoreEnvironment
+import org.jetbrains.kotlin.config.LanguageFeature
+import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.config.LanguageVersionSettingsImpl
+import org.jetbrains.kotlin.container.get
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.context.withModule
 import org.jetbrains.kotlin.descriptors.*
@@ -55,24 +59,16 @@ import java.io.File
 import java.util.*
 
 class MultiModuleJavaAnalysisCustomTest : KtUsefulTestCase() {
+
     private class TestModule(
         val project: Project,
         val _name: String, val kotlinFiles: List<KtFile>, val javaFilesScope: GlobalSearchScope,
         val _dependencies: TestModule.() -> List<TestModule>
-    ) : ModuleInfo {
+    ) : TrackableModuleInfo {
+        override fun createModificationTracker(): ModificationTracker = ModificationTracker.NEVER_CHANGED
+
         override fun dependencies() = _dependencies()
         override val name = Name.special("<$_name>")
-
-        override val platform: TargetPlatform
-            get() = JvmPlatforms.unspecifiedJvmPlatform
-
-        override val analyzerServices: PlatformDependentAnalyzerServices
-            get() = JvmPlatformAnalyzerServices
-    }
-
-    private object BuiltInModule : ModuleInfo {
-        override fun dependencies() = listOf(this)
-        override val name = Name.special("<built-in module>")
 
         override val platform: TargetPlatform
             get() = JvmPlatforms.unspecifiedJvmPlatform
@@ -86,7 +82,7 @@ class MultiModuleJavaAnalysisCustomTest : KtUsefulTestCase() {
         val environment = createEnvironment(moduleDirs)
         val modules = setupModules(environment, moduleDirs)
         val projectContext = ProjectContext(environment.project, "MultiModuleJavaAnalysisTest")
-        val builtIns = JvmBuiltIns(projectContext.storageManager, JvmBuiltIns.Kind.FROM_DEPENDENCIES)
+        val builtIns = JvmBuiltIns(projectContext.storageManager, JvmBuiltIns.Kind.FROM_CLASS_LOADER)
         val platformParameters = JvmPlatformParameters(
             packagePartProviderFactory = { PackagePartProvider.Empty },
             moduleByJavaClass = { javaClass ->
@@ -96,25 +92,19 @@ class MultiModuleJavaAnalysisCustomTest : KtUsefulTestCase() {
             isModuleAnStdlib = { false }
         )
 
-        val resolverForProject = object : AbstractResolverForProject<ModuleInfo>(
+        val resolverForProject = object : AbstractResolverForProject<TestModule>(
             "test",
             projectContext,
-            modules + BuiltInModule,
+            modules
         ) {
-            override fun sdkDependency(module: ModuleInfo): ModuleInfo? = null
+            override fun sdkDependency(module: TestModule): TestModule? = null
 
-            override fun modulesContent(module: ModuleInfo): ModuleContent<ModuleInfo> {
-                return if (module is TestModule)
-                    ModuleContent(module, module.kotlinFiles, module.javaFilesScope)
-                else {
-                    val allJavaFiles = GlobalSearchScope.union(modules.map(TestModule::javaFilesScope).toTypedArray())
-                    ModuleContent(module, emptyList(), GlobalSearchScope.notScope(allJavaFiles))
-                }
-            }
+            override fun modulesContent(module: TestModule): ModuleContent<TestModule> =
+                ModuleContent(module, module.kotlinFiles, module.javaFilesScope)
 
-            override fun builtInsForModule(module: ModuleInfo): KotlinBuiltIns = builtIns
+            override fun builtInsForModule(module: TestModule): KotlinBuiltIns = builtIns
 
-            override fun createResolverForModule(descriptor: ModuleDescriptor, moduleInfo: ModuleInfo): ResolverForModule =
+            override fun createResolverForModule(descriptor: ModuleDescriptor, moduleInfo: TestModule): ResolverForModule =
                 JvmResolverForModuleFactory(
                     platformParameters,
                     CompilerEnvironment,
@@ -128,8 +118,12 @@ class MultiModuleJavaAnalysisCustomTest : KtUsefulTestCase() {
                 )
         }
 
-        builtIns.builtInsModule = resolverForProject.descriptorForModule(BuiltInModule)
-        builtIns.initialize(builtIns.builtInsModule, true)
+        builtIns.initialize(
+            resolverForProject.descriptorForModule(resolverForProject.allModules.first()),
+            resolverForProject.resolverForModule(resolverForProject.allModules.first())
+                .componentProvider.get<LanguageVersionSettings>()
+                .supportsFeature(LanguageFeature.AdditionalBuiltInsMembers)
+        )
 
         performChecks(resolverForProject, modules)
     }
@@ -165,7 +159,7 @@ class MultiModuleJavaAnalysisCustomTest : KtUsefulTestCase() {
         return modules.values.toList()
     }
 
-    private fun performChecks(resolverForProject: ResolverForProject<ModuleInfo>, modules: List<TestModule>) {
+    private fun performChecks(resolverForProject: ResolverForProject<TestModule>, modules: List<TestModule>) {
         modules.forEach {
             module ->
             val moduleDescriptor = resolverForProject.descriptorForModule(module)
