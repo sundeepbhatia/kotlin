@@ -45,10 +45,10 @@ class NewMultiplatformProjectImportingTest : MultiplePluginVersionGradleImportin
     @PluginTargetVersions(pluginVersion = "1.3.10+", gradleVersionForLatestPlugin = mppImportTestMinVersionForMaster)
     fun testProjectDependency() {
         val jvmAndJsPlatform = JsPlatforms.defaultJsPlatform.with(JvmPlatforms.jvm16)
-        
+
         configureByFiles()
         importProject()
-        
+
         checkProjectStructure() {
             allModules {
                 languageVersion("1.3")
