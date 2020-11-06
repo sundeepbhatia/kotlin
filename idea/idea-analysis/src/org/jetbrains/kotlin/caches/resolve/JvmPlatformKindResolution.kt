@@ -59,12 +59,11 @@ class JvmPlatformKindResolution : IdePlatformKindResolution {
         sdkDependency: SdkInfo?,
         stdlibDependency: LibraryInfo?,
     ): KotlinBuiltIns {
-        // For JVM modules without stdlib dependency (i.e. modules not under content root)
-        // should probably still be JvmBuiltins from class loader, not default
-        return if (sdkDependency != null && moduleInfo !is SdkInfo && stdlibDependency != null)
-            JvmBuiltIns(projectContext.storageManager, JvmBuiltIns.Kind.FROM_DEPENDENCIES)
-        else
-            DefaultBuiltIns.Instance
+        return when {
+            sdkDependency == null || moduleInfo is SdkInfo -> DefaultBuiltIns.Instance
+            stdlibDependency == null -> JvmBuiltIns(projectContext.storageManager, JvmBuiltIns.Kind.FROM_CLASS_LOADER)
+            else -> JvmBuiltIns(projectContext.storageManager, JvmBuiltIns.Kind.FROM_DEPENDENCIES)
+        }
     }
 
     data class CacheKeyBySdk(val sdk: Sdk) : BuiltInsCacheKey

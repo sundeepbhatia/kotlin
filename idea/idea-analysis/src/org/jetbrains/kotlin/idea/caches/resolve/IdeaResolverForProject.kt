@@ -147,12 +147,15 @@ class IdeaResolverForProject(
             if (newBuiltIns is JvmBuiltIns) {
                 // SDK should be present, otherwise we wouldn't have created JvmBuiltIns in createBuiltIns
                 val sdkDescriptor = resolverForSdk.descriptorForModule(sdk!!)
-                val stdlibDescriptor = stdlib?.let { resolverForSdk.descriptorForModule(it) }!!
-
                 val isAdditionalBuiltInsFeaturesSupported = module.supportsAdditionalBuiltInsMembers(projectContextFromSdkResolver.project)
 
                 newBuiltIns.initialize(sdkDescriptor, isAdditionalBuiltInsFeaturesSupported)
-                if (newBuiltIns.kind == JvmBuiltIns.Kind.FROM_DEPENDENCIES) newBuiltIns.builtInsModule = stdlibDescriptor
+
+                if (newBuiltIns.kind == JvmBuiltIns.Kind.FROM_DEPENDENCIES) {
+                    val stdlibDescriptor = stdlib?.let { resolverForSdk.descriptorForModule(it) }
+                        ?: error("Attempt to create built-ins without dependency on Kotlin standard library")
+                    newBuiltIns.builtInsModule = stdlibDescriptor
+                }
             }
 
             return@compute newBuiltIns
