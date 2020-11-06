@@ -115,15 +115,11 @@ class KotlinSourceSetDataService : AbstractProjectDataService<GradleSourceSetDat
             }
 
         private fun relevantPlatformKinds(platform: TargetPlatform, projectPlatforms: List<KotlinPlatform>): Set<SimplePlatform> {
-            if (projectPlatforms.singleOrNull() == KotlinPlatform.COMMON) {
-                return platform.componentPlatforms
-            }
-
             val result = HashSet<SimplePlatform>()
 
             for (simplePlatform in platform.componentPlatforms) {
                 val list = when (simplePlatform) {
-                    is JvmPlatform -> listOf(KotlinPlatform.ANDROID, KotlinPlatform.JVM)
+                    is JvmPlatform -> listOf(KotlinPlatform.ANDROID, KotlinPlatform.JVM, KotlinPlatform.COMMON)
                     is JsPlatform -> listOf(KotlinPlatform.JS)
                     is NativePlatform -> listOf(KotlinPlatform.NATIVE)
                     else -> enumValues<KotlinPlatform>().toList()
