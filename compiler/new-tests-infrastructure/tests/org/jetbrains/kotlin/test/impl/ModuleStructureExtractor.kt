@@ -136,7 +136,7 @@ class ModuleStructureExtractor private constructor(
 
                 currentModuleName = values.first() as String
                 @Suppress("UNCHECKED_CAST")
-                currentModuleTargetPlatform = parseTargetPlatform(values.subList(1, values.size) as List<String>)
+                currentModuleTargetPlatform = TargetPlatformParser.parseTargetPlatform(values.subList(1, values.size) as List<String>)
             }
             ModuleStructureDirectives.dependency,
             ModuleStructureDirectives.dependsOn -> {
@@ -241,11 +241,6 @@ class ModuleStructureExtractor private constructor(
         if (rawDirective == null) return
         val parsedDirective = directivesBuilder.convertToRegisteredDirective(rawDirective) ?: return
         directivesBuilder.addParsedDirective(parsedDirective)
-    }
-
-    private fun parseTargetPlatform(values: List<String>): TargetPlatform? {
-        // TODO: implement proper target parsing
-        return null
     }
 
     private fun validateFileName(fileName: String) {
