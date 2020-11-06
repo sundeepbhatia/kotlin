@@ -6,7 +6,7 @@
 package org.jetbrains.kotlin.test.directives
 
 object ModuleStructureDirectives : SimpleDirectivesContainer() {
-    val module = valueDirective(
+    val module = stringDirective(
         name = "MODULE",
         """
             Usage: // MODULE: {name} [targets...]
@@ -14,7 +14,7 @@ object ModuleStructureDirectives : SimpleDirectivesContainer() {
         """.trimIndent()
     )
 
-    val dependency = valueDirective(
+    val dependency = stringDirective(
         name = "DEPENDENCY",
         """
             Usage: // DEPENDENCY: {name} [SOURCE|KLIB|BINARY]
@@ -22,7 +22,7 @@ object ModuleStructureDirectives : SimpleDirectivesContainer() {
         """.trimIndent()
     )
 
-    val dependsOn = valueDirective(
+    val dependsOn = stringDirective(
         name = "DEPENDS_ON",
         """
             Usage: // DEPENDS_ON: {name} [SOURCE|KLIB|BINARY]
@@ -32,7 +32,7 @@ object ModuleStructureDirectives : SimpleDirectivesContainer() {
         """.trimIndent()
     )
 
-    val file = valueDirective(
+    val file = stringDirective(
         name = "FILE",
         """
             Usage: // FILE: name.{kt|java}
@@ -40,7 +40,7 @@ object ModuleStructureDirectives : SimpleDirectivesContainer() {
         """.trimIndent()
     )
 
-    val targetFrontend = valueDirective(
+    val targetFrontend = stringDirective(
         name = "TARGET_FRONTEND",
         """
             Usage: // TARGET_FRONTEND: {Frontend}
@@ -48,7 +48,7 @@ object ModuleStructureDirectives : SimpleDirectivesContainer() {
         """.trimIndent()
     )
 
-    val targetBackend = valueDirective(
+    val targetBackend = stringDirective(
         name = "TARGET_BACKEND",
         """
             Usage: // TARGET_BACKEND: {Backend}

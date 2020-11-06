@@ -30,6 +30,7 @@ class RegisteredDirectivesParser(private val container: DirectivesContainer, pri
     private val simpleDirectives = mutableListOf<SimpleDirective>()
     private val stringValueDirectives = mutableMapOf<StringValueDirective, MutableList<String>>()
     private val enumValueDirectives = mutableMapOf<EnumValueDirective<*>, MutableList<Enum<*>>>()
+    private val valueDirectives = mutableMapOf<ValueDirective<*>, MutableList<Any>>()
 
     /**
      * returns true means that line contain directive
@@ -54,6 +55,11 @@ class RegisteredDirectivesParser(private val container: DirectivesContainer, pri
                 val list = enumValueDirectives.getOrPut(directive, ::mutableListOf)
                 @Suppress("UNCHECKED_CAST")
                 list += values as List<Enum<*>>
+            }
+            is ValueDirective<*> -> {
+                val list = valueDirectives.getOrPut(directive, ::mutableListOf)
+                @Suppress("UNCHECKED_CAST")
+                list.addAll(values as List<Any>)
             }
         }
     }
@@ -88,15 +94,29 @@ class RegisteredDirectivesParser(private val container: DirectivesContainer, pri
                     }
                 }
             }
+
+            is ValueDirective<*> -> {
+                if (rawValues == null) {
+                    assertions.fail {
+                        "Directive $directive must have at least one value"
+                    }
+                }
+                rawValues.map { directive.extractValue(it) ?: assertions.fail { "$it is not valid value for $directive" } }
+            }
         }
         return ParsedDirective(directive, values)
     }
 
     private fun <T : Enum<T>> EnumValueDirective<T>.extractValue(name: String): T? {
-        return possibleValues.firstOrNull { it.name == name }
+        possibleValues.firstOrNull { it.name == name }?.let { return it }
+        return additionalParser?.invoke(name)
+    }
+
+    private fun <T : Any> ValueDirective<T>.extractValue(name: String): T? {
+        return parser.invoke(name)
     }
 
     fun build(): RegisteredDirectives {
-        return RegisteredDirectivesImpl(simpleDirectives, stringValueDirectives, enumValueDirectives)
+        return RegisteredDirectivesImpl(simpleDirectives, stringValueDirectives, enumValueDirectives, valueDirectives)
     }
 }

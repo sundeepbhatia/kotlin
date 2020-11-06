@@ -21,12 +21,20 @@ abstract class SimpleDirectivesContainer : DirectivesContainer() {
         return SimpleDirective(name, description).also(this::registerDirective)
     }
 
-    protected fun valueDirective(name: String, description: String): StringValueDirective {
+    protected fun stringDirective(name: String, description: String): StringValueDirective {
         return StringValueDirective(name, description).also(this::registerDirective)
     }
 
-    protected inline fun <reified T : Enum<T>> enumDirective(name: String, description: String): EnumValueDirective<T> {
-        return EnumValueDirective<T>(name, description, enumValues()).also(this::registerDirective)
+    protected inline fun <reified T : Enum<T>> enumDirective(
+        name: String,
+        description: String,
+        noinline additionalParser: ((String) -> T?)? = null
+    ): EnumValueDirective<T> {
+        return EnumValueDirective(name, description, enumValues(), additionalParser).also(this::registerDirective)
+    }
+
+    protected fun <T : Any> valueDirective(name: String, description: String, parser: (String) -> T?): ValueDirective<T> {
+        return ValueDirective(name, description, parser).also(this::registerDirective)
     }
 
     protected fun registerDirective(directive: Directive) {

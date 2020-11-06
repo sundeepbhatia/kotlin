@@ -29,18 +29,26 @@ class EnumValueDirective<T : Enum<T>>(
     name: String,
     description: String,
     val possibleValues: Array<T>,
+    val additionalParser: ((String) -> T?)?
+) : Directive(name, description)
+
+class ValueDirective<T : Any>(
+    name: String,
+    description: String,
+    val parser: (String) -> T?
 ) : Directive(name, description)
 
 // --------------------------- Registered directive ---------------------------
 
 abstract class RegisteredDirectives {
     companion object {
-        val Empty = RegisteredDirectivesImpl(emptyList(), emptyMap(), emptyMap())
+        val Empty = RegisteredDirectivesImpl(emptyList(), emptyMap(), emptyMap(), emptyMap())
     }
 
-    abstract operator fun contains(directive: SimpleDirective): Boolean
+    abstract operator fun contains(directive: Directive): Boolean
     abstract operator fun get(directive: StringValueDirective): List<String>
     abstract operator fun <T : Enum<T>> get(directive: EnumValueDirective<T>): List<T>
+    abstract operator fun <T : Any> get(directive: ValueDirective<T>): List<T>
 
     abstract fun isEmpty(): Boolean
 }
@@ -48,10 +56,16 @@ abstract class RegisteredDirectives {
 class RegisteredDirectivesImpl(
     private val simpleDirectives: List<SimpleDirective>,
     private val stringValueDirectives: Map<StringValueDirective, List<String>>,
-    private val enumValueDirectives: Map<EnumValueDirective<*>, List<Enum<*>>>
+    private val enumValueDirectives: Map<EnumValueDirective<*>, List<Enum<*>>>,
+    private val valueDirectives: Map<ValueDirective<*>, List<Any>>
 ) : RegisteredDirectives() {
-    override operator fun contains(directive: SimpleDirective): Boolean {
-        return directive in simpleDirectives
+    override operator fun contains(directive: Directive): Boolean {
+        return when (directive) {
+            is SimpleDirective -> directive in simpleDirectives
+            is StringValueDirective -> directive in stringValueDirectives
+            is EnumValueDirective<*> -> directive in enumValueDirectives
+            is ValueDirective<*> -> directive in valueDirectives
+        }
     }
 
     override operator fun get(directive: StringValueDirective): List<String> {
@@ -63,6 +77,11 @@ class RegisteredDirectivesImpl(
         return enumValueDirectives[directive] as List<T>? ?: emptyList()
     }
 
+    override fun <T : Any> get(directive: ValueDirective<T>): List<T> {
+        @Suppress("UNCHECKED_CAST")
+        return valueDirectives[directive] as List<T>? ?: emptyList()
+    }
+
     override fun isEmpty(): Boolean {
         return simpleDirectives.isEmpty() && stringValueDirectives.isEmpty() && enumValueDirectives.isEmpty()
     }
@@ -72,6 +91,7 @@ class RegisteredDirectivesImpl(
             simpleDirectives.forEach { appendLine("  $it") }
             stringValueDirectives.forEach { (d, v) -> appendLine("  $d: ${v.joinToArrayString()}") }
             enumValueDirectives.forEach { (d, v) -> appendLine("  $d: ${v.joinToArrayString()}") }
+            valueDirectives.forEach { (d, v) -> appendLine("  $d: ${v.joinToArrayString()}")}
         }
     }
 }
@@ -90,7 +110,7 @@ class ComposedRegisteredDirectives private constructor(
         }
     }
 
-    override fun contains(directive: SimpleDirective): Boolean {
+    override fun contains(directive: Directive): Boolean {
         return containers.any { directive in it }
     }
 
@@ -108,7 +128,55 @@ class ComposedRegisteredDirectives private constructor(
         return emptyList()
     }
 
+    override fun <T : Any> get(directive: ValueDirective<T>): List<T> {
+        for (container in containers) {
+            container[directive].takeIf { it.isNotEmpty() }?.let { return it }
+        }
+        return emptyList()
+    }
+
     override fun isEmpty(): Boolean {
         return containers.all { it.isEmpty() }
+    }
+}
+
+// --------------------------- Utils ---------------------------
+
+fun RegisteredDirectives.singleValue(directive: StringValueDirective): String {
+    return singleOrZeroValue(directive) ?: error("No values passed to $directive")
+}
+
+fun RegisteredDirectives.singleOrZeroValue(directive: StringValueDirective): String? {
+    val values = this[directive]
+    return when (values.size) {
+        0 -> null
+        1 -> values.single()
+        else -> error("Too many values passed to $directive")
+    }
+}
+
+fun <E : Enum<E>> RegisteredDirectives.singleValue(directive: EnumValueDirective<E>): E {
+    return singleOrZeroValue(directive) ?: error("No values passed to $directive")
+}
+
+fun <E : Enum<E>> RegisteredDirectives.singleOrZeroValue(directive: EnumValueDirective<E>): E? {
+    val values = this[directive]
+    return when (values.size) {
+        0 -> null
+        1 -> values.single()
+        else -> error("Too many values passed to $directive")
+    }
+}
+
+fun <T : Any> RegisteredDirectives.singleValue(directive: ValueDirective<T>): T {
+    return singleOrZeroValue(directive) ?: error("No values passed to $directive")
+}
+
+fun <T : Any> RegisteredDirectives.singleOrZeroValue(directive: ValueDirective<T>): T? {
+    val values = this[directive]
+    return when (values.size) {
+        0 -> null
+        1 -> values.single()
+        else -> error("Too many values passed to $directive")
     }
 }

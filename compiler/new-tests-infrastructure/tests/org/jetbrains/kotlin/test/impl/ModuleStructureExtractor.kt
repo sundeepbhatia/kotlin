@@ -188,6 +188,8 @@ class ModuleStructureExtractor private constructor(
 
     private fun finishModule() {
         finishFile()
+        val moduleDirectives = directivesBuilder.build()
+        currentModuleLanguageVersionSettingsBuilder.configureUsingDirectives(moduleDirectives)
         modules += TestModule(
             name = currentModuleName ?: defaultModuleName,
             targetPlatform = currentModuleTargetPlatform ?: defaultsProvider.defaultPlatform,
@@ -195,7 +197,7 @@ class ModuleStructureExtractor private constructor(
             targetBackend = currentModuleBackendKind ?: defaultsProvider.defaultBackend,
             files = filesOfCurrentModule,
             dependencies = dependenciesOfCurrentModule,
-            directives = directivesBuilder.build(),
+            directives = moduleDirectives,
             languageVersionSettings = currentModuleLanguageVersionSettingsBuilder.build()
         )
         firstFileInModule = true
@@ -238,14 +240,7 @@ class ModuleStructureExtractor private constructor(
     private fun tryParseRegularDirective(rawDirective: RegisteredDirectivesParser.RawDirective?) {
         if (rawDirective == null) return
         val parsedDirective = directivesBuilder.convertToRegisteredDirective(rawDirective) ?: return
-        if (parsedDirective.directive in LanguageSettingsDirectives) {
-            configureLanguageDirective(rawDirective)
-        }
         directivesBuilder.addParsedDirective(parsedDirective)
-    }
-
-    private fun configureLanguageDirective(rawDirective: RegisteredDirectivesParser.RawDirective) {
-        // TODO: implement proper language settings parsing
     }
 
     private fun parseTargetPlatform(values: List<String>): TargetPlatform? {

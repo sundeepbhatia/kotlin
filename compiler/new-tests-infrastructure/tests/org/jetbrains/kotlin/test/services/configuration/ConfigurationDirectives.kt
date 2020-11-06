@@ -8,7 +8,7 @@ package org.jetbrains.kotlin.test.services.configuration
 import org.jetbrains.kotlin.test.directives.SimpleDirectivesContainer
 
 object ConfigurationDirectives : SimpleDirectivesContainer() {
-    val kotlinConfigurationFlags = valueDirective(
+    val kotlinConfigurationFlags = stringDirective(
         "KOTLIN_CONFIGURATION_FLAGS",
         "List of kotlin configuration flags"
     )

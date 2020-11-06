@@ -35,10 +35,6 @@ class TestConfigurationImpl(
     directives: List<DirectivesContainer>,
     override val defaultRegisteredDirectives: RegisteredDirectives
 ) : TestConfiguration() {
-    companion object {
-        private val DEFAULT_PREPROCESSORS: List<Constructor<SourceFilePreprocessor>> = listOf(::MetaInfosCleanupPreprocessor)
-    }
-
     override val rootDisposable: Disposable = TestDisposable()
     override val testServices: TestServices = TestServices()
     override val directives: DirectivesContainer
@@ -50,7 +46,7 @@ class TestConfigurationImpl(
         testServices.apply {
             @OptIn(ExperimentalStdlibApi::class)
             val sourceFilePreprocessors = buildList {
-                addAll(DEFAULT_PREPROCESSORS.map { it.invoke(this@apply) })
+                addAll(defaultPreprocessors.map { it.invoke(this@apply) })
                 sourcePreprocessors.map { it.invoke(this@apply) }
             }
             val sourceFileProvider = SourceFileProviderImpl(sourceFilePreprocessors)

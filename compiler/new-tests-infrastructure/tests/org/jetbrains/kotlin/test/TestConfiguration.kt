@@ -6,15 +6,26 @@
 package org.jetbrains.kotlin.test
 
 import com.intellij.openapi.Disposable
+import org.jetbrains.kotlin.test.builders.Constructor
 import org.jetbrains.kotlin.test.directives.DirectivesContainer
+import org.jetbrains.kotlin.test.directives.LanguageSettingsDirectives
 import org.jetbrains.kotlin.test.directives.RegisteredDirectives
+import org.jetbrains.kotlin.test.frontend.preprocessors.MetaInfosCleanupPreprocessor
 import org.jetbrains.kotlin.test.model.*
+import org.jetbrains.kotlin.test.services.SourceFilePreprocessor
 import org.jetbrains.kotlin.test.services.TestServices
 import org.jetbrains.kotlin.test.services.configuration.ConfigurationDirectives
 
 abstract class TestConfiguration {
     companion object {
-        val defaultDirectiveContainers = listOf(ConfigurationDirectives)
+        val defaultDirectiveContainers = listOf(
+            ConfigurationDirectives,
+            LanguageSettingsDirectives
+        )
+
+        val defaultPreprocessors: List<Constructor<SourceFilePreprocessor>> = listOf(
+            ::MetaInfosCleanupPreprocessor
+        )
     }
 
     abstract val rootDisposable: Disposable
