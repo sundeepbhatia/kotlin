@@ -29,8 +29,10 @@ abstract class SimpleDirectivesContainer : DirectivesContainer() {
         name: String,
         description: String,
         noinline additionalParser: ((String) -> T?)? = null
-    ): EnumValueDirective<T> {
-        return EnumValueDirective(name, description, enumValues(), additionalParser).also(this::registerDirective)
+    ): ValueDirective<T> {
+        val possibleValues = enumValues<T>()
+        val parser: (String) -> T? = { value -> possibleValues.firstOrNull { it.name == value } ?: additionalParser?.invoke(value) }
+        return ValueDirective(name, description, parser).also(this::registerDirective)
     }
 
     protected fun <T : Any> valueDirective(name: String, description: String, parser: (String) -> T?): ValueDirective<T> {

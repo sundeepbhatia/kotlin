@@ -10,7 +10,6 @@ import org.jetbrains.kotlin.test.directives.*
 class RegisteredDirectivesBuilder {
     private val simpleDirectives: MutableList<SimpleDirective> = mutableListOf()
     private val stringValueDirectives: MutableMap<StringValueDirective, List<String>> = mutableMapOf()
-    private val enumValueDirectives: MutableMap<EnumValueDirective<*>, List<Enum<*>>> = mutableMapOf()
     private val valueDirectives: MutableMap<ValueDirective<*>, List<Any>> = mutableMapOf()
 
     operator fun SimpleDirective.unaryPlus() {
@@ -23,14 +22,6 @@ class RegisteredDirectivesBuilder {
 
     infix fun StringValueDirective.with(values: List<String>) {
         stringValueDirectives.putWithExistsCheck(this, values)
-    }
-
-    infix fun <T : Enum<T>> EnumValueDirective<T>.with(value: T) {
-        with(listOf(value))
-    }
-
-    infix fun <T : Enum<T>> EnumValueDirective<T>.with(values: List<T>) {
-        enumValueDirectives.putWithExistsCheck(this, values)
     }
 
     infix fun <T : Any> ValueDirective<T>.with(value: T) {
@@ -49,6 +40,6 @@ class RegisteredDirectivesBuilder {
     }
 
     fun build(): RegisteredDirectives {
-        return RegisteredDirectivesImpl(simpleDirectives, stringValueDirectives, enumValueDirectives, valueDirectives)
+        return RegisteredDirectivesImpl(simpleDirectives, stringValueDirectives, valueDirectives)
     }
 }

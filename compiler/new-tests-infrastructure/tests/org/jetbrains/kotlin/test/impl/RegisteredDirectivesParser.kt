@@ -29,7 +29,6 @@ class RegisteredDirectivesParser(private val container: DirectivesContainer, pri
 
     private val simpleDirectives = mutableListOf<SimpleDirective>()
     private val stringValueDirectives = mutableMapOf<StringValueDirective, MutableList<String>>()
-    private val enumValueDirectives = mutableMapOf<EnumValueDirective<*>, MutableList<Enum<*>>>()
     private val valueDirectives = mutableMapOf<ValueDirective<*>, MutableList<Any>>()
 
     /**
@@ -50,11 +49,6 @@ class RegisteredDirectivesParser(private val container: DirectivesContainer, pri
                 val list = stringValueDirectives.getOrPut(directive, ::mutableListOf)
                 @Suppress("UNCHECKED_CAST")
                 list += values as List<String>
-            }
-            is EnumValueDirective<*> -> {
-                val list = enumValueDirectives.getOrPut(directive, ::mutableListOf)
-                @Suppress("UNCHECKED_CAST")
-                list += values as List<Enum<*>>
             }
             is ValueDirective<*> -> {
                 val list = valueDirectives.getOrPut(directive, ::mutableListOf)
@@ -82,19 +76,6 @@ class RegisteredDirectivesParser(private val container: DirectivesContainer, pri
                 rawValues ?: emptyList<Any?>()
             }
 
-            is EnumValueDirective<*> -> {
-                if (rawValues == null) {
-                    assertions.fail {
-                        "Directive $directive must have at least one value"
-                    }
-                }
-                rawValues.map {
-                    directive.extractValue(it) ?: assertions.fail {
-                        "$it is not valid value for $directive. Acceptable values: ${directive.possibleValues.joinToArrayString()}"
-                    }
-                }
-            }
-
             is ValueDirective<*> -> {
                 if (rawValues == null) {
                     assertions.fail {
@@ -107,16 +88,11 @@ class RegisteredDirectivesParser(private val container: DirectivesContainer, pri
         return ParsedDirective(directive, values)
     }
 
-    private fun <T : Enum<T>> EnumValueDirective<T>.extractValue(name: String): T? {
-        possibleValues.firstOrNull { it.name == name }?.let { return it }
-        return additionalParser?.invoke(name)
-    }
-
     private fun <T : Any> ValueDirective<T>.extractValue(name: String): T? {
         return parser.invoke(name)
     }
 
     fun build(): RegisteredDirectives {
-        return RegisteredDirectivesImpl(simpleDirectives, stringValueDirectives, enumValueDirectives, valueDirectives)
+        return RegisteredDirectivesImpl(simpleDirectives, stringValueDirectives, valueDirectives)
     }
 }
