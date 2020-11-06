@@ -917,16 +917,17 @@ class NewMultiplatformProjectImportingTest : MultiplePluginVersionGradleImportin
     @Test
     @PluginTargetVersions(pluginVersion = "1.3.30+", gradleVersionForLatestPlugin = mppImportTestMinVersionForMaster)
     fun testCommonTestOnetargetPlatform() {
+        val jvmAndJsPlatform = JsPlatforms.defaultJsPlatform.with(JvmPlatforms.defaultJvmPlatform)
         configureByFiles()
         importProject(true)
         checkProjectStructure(true, false, false) {
             module("KotlinMPPL") {}
             module("KotlinMPPL.commonMain") {
-                platform(JsPlatforms.defaultJsPlatform)
+                platform(jvmAndJsPlatform)
                 isCommon(true)
             }
             module("KotlinMPPL.commonTest") {
-                platform(JsPlatforms.defaultJsPlatform)
+                platform(jvmAndJsPlatform)
                 isCommon(true)
             }
             module("KotlinMPPL.jsMain") {
