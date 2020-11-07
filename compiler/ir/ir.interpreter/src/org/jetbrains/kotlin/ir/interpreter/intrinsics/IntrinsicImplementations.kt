@@ -194,3 +194,15 @@ internal object ArrayConstructor : IntrinsicBase() {
         return Next
     }
 }
+
+internal object SourceLocation : IntrinsicBase() {
+    override fun equalTo(irFunction: IrFunction): Boolean {
+        val fqName = irFunction.fqNameWhenAvailable.toString()
+        return fqName == "kotlin.experimental.sourceLocation"
+    }
+
+    override fun evaluate(irFunction: IrFunction, stack: Stack, interpret: IrElement.() -> ExecutionResult): ExecutionResult {
+        stack.pushReturnValue(stack.getCurrentStackInfo().toState(irFunction.returnType))
+        return Next
+    }
+}
