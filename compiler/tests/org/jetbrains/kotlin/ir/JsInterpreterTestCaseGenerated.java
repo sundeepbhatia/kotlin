@@ -584,5 +584,10 @@ public class JsInterpreterTestCaseGenerated extends AbstractJsInterpreterTestCas
         public void testMatrixList() throws Exception {
             runTest("compiler/testData/ir/interpreter/useCases/matrixList.kt");
         }
+
+        @TestMetadata("logIntrinsic.kt")
+        public void testLogIntrinsic() throws Exception {
+            runTest("compiler/testData/ir/interpreter/useCases/logIntrinsic.kt");
+        }
     }
 }
