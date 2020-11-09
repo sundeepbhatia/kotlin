@@ -44,7 +44,7 @@ class JvmPlatformParameters(
     val moduleByJavaClass: (JavaClass) -> ModuleInfo?,
     // params: referenced module info of target class, context module info of current resolver
     val resolverForReferencedModule: ((ModuleInfo, ModuleInfo) -> ResolverForModule?)? = null,
-    val isModuleAnStdlib: (ModuleInfo) -> Boolean
+    val useBuiltinsProviderForModule: (ModuleInfo) -> Boolean
 ) : PlatformAnalysisParameters
 
 
@@ -112,7 +112,7 @@ class JvmResolverForModuleFactory(
             ExpectActualTracker.DoNothing,
             packagePartProvider,
             languageVersionSettings,
-            useBuiltInsProvider = platformParameters.isModuleAnStdlib(moduleInfo)
+            useBuiltInsProvider = platformParameters.useBuiltinsProviderForModule(moduleInfo)
         )
 
         val providersForModule = arrayListOf(

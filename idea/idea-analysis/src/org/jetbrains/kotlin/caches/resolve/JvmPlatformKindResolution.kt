@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.idea.caches.project.LibraryInfo
 import org.jetbrains.kotlin.idea.caches.project.SdkInfo
 import org.jetbrains.kotlin.idea.caches.resolve.BuiltInsCacheKey
+import org.jetbrains.kotlin.idea.configuration.IdeBuiltInsLoadingState
 import org.jetbrains.kotlin.platform.TargetPlatform
 import org.jetbrains.kotlin.platform.impl.JvmIdePlatformKind
 import org.jetbrains.kotlin.platform.jvm.JvmPlatforms
@@ -50,6 +51,10 @@ class JvmPlatformKindResolution : IdePlatformKindResolution {
     override val kind get() = JvmIdePlatformKind
 
     override fun getKeyForBuiltIns(moduleInfo: ModuleInfo, sdkInfo: SdkInfo?, stdlibInfo: LibraryInfo?): BuiltInsCacheKey {
+        require(stdlibInfo == null || IdeBuiltInsLoadingState.isFromDependenciesForJvm) {
+            "Standard library ${stdlibInfo!!.displayedName} provided for built-ins, but loading from dependencies is disabled"
+        }
+
         return if (sdkInfo != null && moduleInfo !is SdkInfo)
             CacheKeyByBuiltInsDependencies(sdkInfo.sdk, stdlibInfo)
         else BuiltInsCacheKey.DefaultBuiltInsKey

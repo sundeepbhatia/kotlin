@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.idea.caches.project.*
 import org.jetbrains.kotlin.idea.caches.project.IdeaModuleInfo
 import org.jetbrains.kotlin.idea.caches.project.getNullableModuleInfo
 import org.jetbrains.kotlin.idea.compiler.IDELanguageSettingsProvider
+import org.jetbrains.kotlin.idea.configuration.IdeBuiltInsLoadingState
 import org.jetbrains.kotlin.idea.project.IdeaEnvironment
 import org.jetbrains.kotlin.idea.project.findAnalyzerServices
 import org.jetbrains.kotlin.idea.project.useCompositeAnalysis
@@ -99,7 +100,9 @@ class IdeaResolverForProject(
                 }
                 tryGetResolverForModuleWithResolutionAnchorFallback(targetModuleInfo, referencingModuleInfo)
             },
-            isModuleAnStdlib = { it is LibraryInfo && it.isKotlinStdlib(projectContext.project) }
+            useBuiltinsProviderForModule = {
+                IdeBuiltInsLoadingState.isFromDependenciesForJvm && it is LibraryInfo && it.isKotlinStdlib(projectContext.project)
+            }
         )
 
         val commonPlatformParameters = CommonAnalysisParameters(
@@ -130,9 +133,7 @@ class IdeaResolverForProject(
 
         fun getOrCreateIfNeeded(module: IdeaModuleInfo): KotlinBuiltIns = projectContextFromSdkResolver.storageManager.compute {
             val sdk = resolverForSdk.sdkDependency(module)
-            val stdlib = module.dependencies().lazyClosure { it.dependencies() }.firstOrNull {
-                it is LibraryInfo && it.isKotlinStdlib(projectContextFromSdkResolver.project)
-            } as? LibraryInfo
+            val stdlib = findStdlibForModulesBuiltins(module)
 
             val key = module.platform.idePlatformKind.resolution.getKeyForBuiltIns(module, sdk, stdlib)
             val cachedBuiltIns = cache[key]
@@ -151,13 +152,26 @@ class IdeaResolverForProject(
                 newBuiltIns.initialize(sdkDescriptor, isAdditionalBuiltInsFeaturesSupported)
 
                 if (newBuiltIns.kind == JvmBuiltIns.Kind.FROM_DEPENDENCIES) {
+                    require(IdeBuiltInsLoadingState.isFromDependenciesForJvm) {
+                        "Incorrect attempt to create built-ins from module dependencies"
+                    }
+
                     val stdlibDescriptor = stdlib?.let { resolverForSdk.descriptorForModule(it) }
-                        ?: error("Attempt to create built-ins without dependency on Kotlin standard library")
+                        ?: error("Attempt to create built-ins without proper dependency on Kotlin standard library")
                     newBuiltIns.builtInsModule = stdlibDescriptor
                 }
             }
 
             return@compute newBuiltIns
+        }
+
+        private fun findStdlibForModulesBuiltins(module: IdeaModuleInfo): LibraryInfo? {
+            if (IdeBuiltInsLoadingState.isFromClassLoader)
+                return null
+
+            return module.dependencies().lazyClosure { it.dependencies() }.firstOrNull {
+                it is LibraryInfo && it.isKotlinStdlib(projectContextFromSdkResolver.project)
+            } as? LibraryInfo
         }
     }
 

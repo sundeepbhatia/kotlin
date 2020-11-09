@@ -37,6 +37,7 @@ import org.jetbrains.kotlin.idea.KotlinIdeaAnalysisBundle
 import org.jetbrains.kotlin.idea.caches.resolve.util.enlargedSearchScope
 import org.jetbrains.kotlin.idea.caches.trackers.KotlinModuleOutOfCodeBlockModificationTracker
 import org.jetbrains.kotlin.idea.configuration.BuildSystemType
+import org.jetbrains.kotlin.idea.configuration.IdeBuiltInsLoadingState
 import org.jetbrains.kotlin.idea.configuration.getBuildSystemType
 import org.jetbrains.kotlin.idea.core.isInTestSourceContentKotlinAware
 import org.jetbrains.kotlin.idea.framework.effectiveKind
@@ -353,14 +354,24 @@ abstract class LibraryInfo(override val project: Project, val library: Library) 
         val result = LinkedHashSet<IdeaModuleInfo>()
         result.add(this)
 
-        // Stdlib doesn't depend on anything
-        if (this.isKotlinStdlib(project))
-            return result.toList()
-
         val (libraries, sdks) = LibraryDependenciesCache.getInstance(project).getLibrariesAndSdksUsedWith(this)
 
         result.addAll(sdks)
-        result.addAll(libraries)
+
+        /*
+        * When built-ins are created from module dependencies (as opposed to loading them from classloader)
+        * we must resolve Kotlin standard library containing some of the built-ins declarations in the same
+        * resolver for project as JDK. This comes from the following requirements:
+        * - JvmBuiltins need JDK and standard library descriptors -> resolver for project should be able to
+        *   resolve them
+        * - Builtins are created in BuiltinsCache -> module descriptors should be resolved under lock of the
+        *   SDK resolver to prevent deadlocks
+        * This means we have to assume that standard library has no dependencies on other libraries or effectively
+        * drop resolver for SDK otherwise. Libraries depend on superset of their actual dependencies, so moving
+        * stdlib with all dependencies down is a questionable option.
+        */
+        if (IdeBuiltInsLoadingState.isFromClassLoader || !this.isKotlinStdlib(project))
+            result.addAll(libraries)
 
         return result.toList()
     }

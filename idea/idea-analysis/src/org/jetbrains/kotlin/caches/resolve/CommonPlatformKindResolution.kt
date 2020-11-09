@@ -64,7 +64,6 @@ class CommonPlatformKindResolution : IdePlatformKindResolution {
     }
 
     override fun createLibraryInfo(project: Project, library: Library): List<LibraryInfo> {
-
         val klibFiles = library.getFiles(OrderRootType.CLASSES).filter {
             it.isKlibLibraryRootForPlatform(CommonPlatforms.defaultCommonPlatform)
         }
