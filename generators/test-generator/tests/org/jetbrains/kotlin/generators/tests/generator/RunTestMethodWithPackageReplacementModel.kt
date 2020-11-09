@@ -6,28 +6,20 @@
 package org.jetbrains.kotlin.generators.tests.generator
 
 import org.jetbrains.kotlin.test.TargetBackend
-import org.jetbrains.kotlin.utils.Printer
 
 class RunTestMethodWithPackageReplacementModel(
-    private val targetBackend: TargetBackend,
-    private val testMethodName: String,
-    private val testRunnerMethodName: String,
-    private val additionalRunnerArguments: List<String>
+    val targetBackend: TargetBackend,
+    val testMethodName: String,
+    val testRunnerMethodName: String,
+    val additionalRunnerArguments: List<String>
 ) : MethodModel {
+    object Kind : MethodModel.Kind()
+
+    override val kind: MethodModel.Kind
+        get() = Kind
+
     override val name = METHOD_NAME
     override val dataString: String? = null
-
-    override fun generateSignature(p: Printer) {
-        p.print("private void $name(String testDataFilePath, String packageName) throws Exception")
-    }
-
-    override fun generateBody(p: Printer) {
-        val className = TargetBackend::class.java.simpleName
-        val additionalArguments = if (additionalRunnerArguments.isNotEmpty())
-            additionalRunnerArguments.joinToString(separator = ", ", prefix = ", ")
-        else ""
-        p.println("KotlinTestUtils.$testRunnerMethodName(filePath -> $testMethodName(filePath, packageName), $className.$targetBackend, testDataFilePath$additionalArguments);")
-    }
 
     override fun imports(): Collection<Class<*>> {
         return super.imports() + setOf(TargetBackend::class.java)
