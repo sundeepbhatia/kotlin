@@ -1,0 +1,9 @@
+pluginManagement {
+    repositories {
+        {{kotlin_plugin_repositories}}
+    }
+}
+
+rootProject.name = 'mppBuiltins'
+
+enableFeaturePreview('GRADLE_METADATA')
