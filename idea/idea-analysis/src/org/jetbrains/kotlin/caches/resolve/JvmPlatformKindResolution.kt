@@ -49,8 +49,10 @@ class JvmPlatformKindResolution : IdePlatformKindResolution {
 
     override val kind get() = JvmIdePlatformKind
 
-    override fun getKeyForBuiltIns(moduleInfo: ModuleInfo, sdkInfo: SdkInfo?): BuiltInsCacheKey {
-        return if (sdkInfo != null && moduleInfo !is SdkInfo) CacheKeyBySdk(sdkInfo.sdk) else BuiltInsCacheKey.DefaultBuiltInsKey
+    override fun getKeyForBuiltIns(moduleInfo: ModuleInfo, sdkInfo: SdkInfo?, stdlibInfo: LibraryInfo?): BuiltInsCacheKey {
+        return if (sdkInfo != null && moduleInfo !is SdkInfo)
+            CacheKeyByBuiltInsDependencies(sdkInfo.sdk, stdlibInfo)
+        else BuiltInsCacheKey.DefaultBuiltInsKey
     }
 
     override fun createBuiltIns(
@@ -66,7 +68,7 @@ class JvmPlatformKindResolution : IdePlatformKindResolution {
         }
     }
 
-    data class CacheKeyBySdk(val sdk: Sdk) : BuiltInsCacheKey
+    data class CacheKeyByBuiltInsDependencies(val sdk: Sdk, val stdlib: LibraryInfo?) : BuiltInsCacheKey
 }
 
 class JvmLibraryInfo(project: Project, library: Library) : LibraryInfo(project, library) {

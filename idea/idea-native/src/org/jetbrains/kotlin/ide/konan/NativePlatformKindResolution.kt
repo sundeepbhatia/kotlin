@@ -92,7 +92,7 @@ class NativePlatformKindResolution : IdePlatformKindResolution {
 
     override val kind get() = NativeIdePlatformKind
 
-    override fun getKeyForBuiltIns(moduleInfo: ModuleInfo, sdkInfo: SdkInfo?): BuiltInsCacheKey = NativeBuiltInsCacheKey
+    override fun getKeyForBuiltIns(moduleInfo: ModuleInfo, sdkInfo: SdkInfo?, stdlibInfo: LibraryInfo?): BuiltInsCacheKey = NativeBuiltInsCacheKey
 
     override fun createBuiltIns(
         moduleInfo: ModuleInfo,

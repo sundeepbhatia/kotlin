@@ -32,7 +32,6 @@ import org.jetbrains.kotlin.platform.jvm.isJvm
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.ResolutionAnchorProvider
 import org.jetbrains.kotlin.resolve.jvm.JvmPlatformParameters
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 class IdeaResolverForProject(
     debugName: String,
@@ -135,7 +134,7 @@ class IdeaResolverForProject(
                 it is LibraryInfo && it.isKotlinStdlib(projectContextFromSdkResolver.project)
             } as? LibraryInfo
 
-            val key = module.platform.idePlatformKind.resolution.getKeyForBuiltIns(module, sdk)
+            val key = module.platform.idePlatformKind.resolution.getKeyForBuiltIns(module, sdk, stdlib)
             val cachedBuiltIns = cache[key]
             if (cachedBuiltIns != null) return@compute cachedBuiltIns
 

@@ -49,7 +49,7 @@ class JsPlatformKindResolution : IdePlatformKindResolution {
 
     override val kind get() = JsIdePlatformKind
 
-    override fun getKeyForBuiltIns(moduleInfo: ModuleInfo, sdkInfo: SdkInfo?): BuiltInsCacheKey {
+    override fun getKeyForBuiltIns(moduleInfo: ModuleInfo, sdkInfo: SdkInfo?, stdlibInfo: LibraryInfo?): BuiltInsCacheKey {
         return BuiltInsCacheKey.DefaultBuiltInsKey
     }
 
