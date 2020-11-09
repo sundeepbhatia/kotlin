@@ -6,7 +6,7 @@
 package org.jetbrains.kotlin.idea.configuration
 
 object IdeBuiltInsLoadingState {
-    val state: IdeBuiltInsLoading = IdeBuiltInsLoading.FROM_DEPENDENCIES_JVM
+    val state: IdeBuiltInsLoading = IdeBuiltInsLoading.FROM_CLASSLOADER
 
     enum class IdeBuiltInsLoading {
         FROM_CLASSLOADER,
