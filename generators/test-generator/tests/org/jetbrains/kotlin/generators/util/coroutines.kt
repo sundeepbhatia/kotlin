@@ -5,7 +5,8 @@
 
 package org.jetbrains.kotlin.generators.util
 
-import org.jetbrains.kotlin.generators.tests.generator.MethodModel
+import org.jetbrains.kotlin.generators.model.CoroutinesTestMethodModel
+import org.jetbrains.kotlin.generators.model.MethodModel
 import org.jetbrains.kotlin.test.InTextDirectivesUtils
 import org.jetbrains.kotlin.test.TargetBackend
 import java.io.File

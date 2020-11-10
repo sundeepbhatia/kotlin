@@ -1,17 +1,17 @@
 /*
- * Copyright 2010-2018 JetBrains s.r.o. and Kotlin Programming Language contributors.
+ * Copyright 2010-2020 JetBrains s.r.o. and Kotlin Programming Language contributors.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the license/LICENSE.txt file.
  */
 
-package org.jetbrains.kotlin.generators.tests.generator
+package org.jetbrains.kotlin.generators.model
 
 import org.jetbrains.kotlin.test.TargetBackend
 
-class RunTestMethodModel(
+class RunTestMethodWithPackageReplacementModel(
     val targetBackend: TargetBackend,
     val testMethodName: String,
     val testRunnerMethodName: String,
-    val additionalRunnerArguments: List<String> = emptyList()
+    val additionalRunnerArguments: List<String>
 ) : MethodModel {
     object Kind : MethodModel.Kind()
 
@@ -22,14 +22,10 @@ class RunTestMethodModel(
     override val dataString: String? = null
 
     override fun imports(): Collection<Class<*>> {
-        return super.imports() + if (isWithTargetBackend()) setOf(TargetBackend::class.java) else emptySet()
-    }
-
-    fun isWithTargetBackend(): Boolean {
-        return !(targetBackend == TargetBackend.ANY && additionalRunnerArguments.isEmpty() && testRunnerMethodName == METHOD_NAME)
+        return super.imports() + setOf(TargetBackend::class.java)
     }
 
     companion object {
-        const val METHOD_NAME = "runTest"
+        const val METHOD_NAME = "runTestWithPackageReplacement"
     }
 }
