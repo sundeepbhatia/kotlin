@@ -14,6 +14,7 @@ import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.backend.js.JsIrBackendContext
 import org.jetbrains.kotlin.ir.backend.js.ir.JsIrArithBuilder
 import org.jetbrains.kotlin.ir.backend.js.ir.JsIrBuilder
+import org.jetbrains.kotlin.ir.backend.js.utils.isPure
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.buildField
 import org.jetbrains.kotlin.ir.declarations.*
@@ -49,7 +50,8 @@ class PropertyLazyInitLowering(
                 ?: return
 
             val initFun = context.fileToInitialisationFuns[file]
-                ?: createInitialisationFunction(file).also { context.fileToInitialisationFuns[file] = it }
+                ?: createInitialisationFunction(file)?.also { context.fileToInitialisationFuns[file] = it }
+                ?: return
 
             val initialisationCall = JsIrBuilder.buildCall(
                 target = initFun.symbol,
@@ -62,14 +64,21 @@ class PropertyLazyInitLowering(
 
     private fun createInitialisationFunction(
         file: IrFile
-    ): IrSimpleFunction {
+    ): IrSimpleFunction? {
         val fileName = file.name
 
         val declarations = ArrayList(file.declarations)
 
         val fieldToInitializer = calculateFieldToExpression(
             declarations
-        ).onEach { (key, _) -> key.fields = true }
+        )
+
+        if (fieldToInitializer.all { it.value.isPure(anyVariable = true) }) {
+            return null
+        }
+
+
+        fieldToInitializer.onEach { (key, _) -> key.fields = true }
 
         val initialisedField = irFactory.createInitialisationField(fileName)
             .apply {
@@ -162,11 +171,13 @@ private fun calculateFieldToExpression(functions: Collection<IrDeclaration>): Ma
     functions
         .asSequence()
         .flatMap {
-            if (it is IrProperty) {
-                sequenceOf(it.getter, it.setter)
-            } else sequenceOf(it)
+            when (it) {
+                is IrProperty -> sequenceOf(it.getter, it.setter)
+                is IrSimpleFunction -> sequenceOf(it)
+                else -> sequenceOf(null)
+            }
         }
-        .filterIsInstance<IrSimpleFunction>()
+        .filterNotNull()
         .mapNotNull { it.correspondingPropertySymbol }
         .map { it.owner }
         .filter { it.isTopLevel }
