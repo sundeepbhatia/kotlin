@@ -364,14 +364,14 @@ private val forLoopsLoweringPhase = makeBodyLoweringPhase(
     description = "[Optimization] For loops lowering"
 )
 
-private val propertyLazyInitLoweringPhase2 = makeBodyLoweringPhase(
-    ::PropertyLazyInitLowering2,
-    name = "PropertyLazyInitLowering2",
+private val propertyLazyInitLoweringPhase = makeBodyLoweringPhase(
+    ::PropertyLazyInitLowering,
+    name = "PropertyLazyInitLowering",
     description = "Make property init as lazy"
 )
 
-private val nullizeDeclarations = makeDeclarationTransformerPhase(
-    ::NullizeDeclarations,
+private val removeIntitializersForLazyProperties = makeDeclarationTransformerPhase(
+    ::RemoveIntitializersForLazyProperties,
     name = "NullizeDeclarations",
     description = "Make property init as lazy"
 )
@@ -743,8 +743,8 @@ val loweringList = listOf<Lowering>(
     rangeContainsLoweringPhase,
     forLoopsLoweringPhase,
     primitiveCompanionLoweringPhase,
-    propertyLazyInitLoweringPhase2,
-    nullizeDeclarations,
+    propertyLazyInitLoweringPhase,
+    removeIntitializersForLazyProperties,
     propertyAccessorInlinerLoweringPhase,
     foldConstantLoweringPhase,
     privateMembersLoweringPhase,
