@@ -86,6 +86,7 @@ class JvmEnvironmentConfigurator(testServices: TestServices) : EnvironmentConfig
         if (configurationKind.withReflection) {
             configuration.addJvmClasspathRoot(ForTestCompileRuntime.reflectJarForTests())
         }
+        configuration.addJvmClasspathRoot(KotlinTestUtils.getAnnotationsJar())
 
         val isIr = module.targetBackend == BackendKind.IrBackend
         configuration.put(JVMConfigurationKeys.IR, isIr)
