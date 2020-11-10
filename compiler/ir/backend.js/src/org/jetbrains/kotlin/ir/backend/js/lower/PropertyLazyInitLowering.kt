@@ -5,7 +5,8 @@
 
 package org.jetbrains.kotlin.ir.backend.js.lower
 
-import org.jetbrains.kotlin.backend.common.FileLoweringPass
+import org.jetbrains.kotlin.backend.common.BodyLoweringPass
+import org.jetbrains.kotlin.backend.common.DeclarationTransformer
 import org.jetbrains.kotlin.backend.common.ir.isTopLevel
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities.INTERNAL
 import org.jetbrains.kotlin.ir.IrStatement
@@ -13,19 +14,19 @@ import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.backend.js.JsIrBackendContext
 import org.jetbrains.kotlin.ir.backend.js.ir.JsIrArithBuilder
 import org.jetbrains.kotlin.ir.backend.js.ir.JsIrBuilder
-import org.jetbrains.kotlin.ir.backend.js.utils.isPure
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.buildField
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.ir.util.statements
-import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
-import org.jetbrains.kotlin.ir.visitors.transformChildrenVoid
 import org.jetbrains.kotlin.name.Name
 import kotlin.collections.component1
 import kotlin.collections.component2
 
-class PropertyLazyInitLowering(private val context: JsIrBackendContext) : FileLoweringPass {
+class PropertyLazyInitLowering2(
+    private val context: JsIrBackendContext
+) : BodyLoweringPass {
+
     private val irBuiltIns
         get() = context.irBuiltIns
 
@@ -34,51 +35,85 @@ class PropertyLazyInitLowering(private val context: JsIrBackendContext) : FileLo
     private val irFactory
         get() = context.irFactory
 
-    override fun lower(irFile: IrFile) {
-        val functions = TopLevelFunsSearcher()
-            .search(irFile)
+    private var IrField.fields by context.mapping.lazyInitialisedFields
 
-        val fieldToInitializer = calculateFieldToExpression(
-            functions
-        )
+    override fun lower(irBody: IrBody, container: IrDeclaration) {
+        if (container is IrSimpleFunction) {
+            val topLevelProperty = container.correspondingPropertySymbol
+                ?.owner
+                ?.takeIf { it.isTopLevel }
+                ?.takeUnless { it.isConst }
+                ?.takeIf { it.backingField?.initializer != null }
+                ?: return
 
-        val allPropertyInitializersPure = fieldToInitializer
-            .all { it.value.isPure(anyVariable = true) }
+            val file = topLevelProperty.parent as? IrFile
+                ?: return
 
-        if (allPropertyInitializersPure) return
+            var initFun = context.fileToInitialisationFuns[file]
 
-        fieldToInitializer.onEach { it.key.initializer = null }
+            if (initFun == null) {
+                val fileName = file.name
 
-        if (fieldToInitializer.isEmpty()) return
+                val declarations = ArrayList(file.declarations)
+                val functions = declarations
+                    .flatMap {
+                        if (it is IrProperty) {
+                            listOf(it.getter, it.setter)
+                        } else listOf(it)
+                    }
+                    .filterIsInstance<IrSimpleFunction>()
 
-        val fileName = irFile.name
-        val initialisedField = irFactory.createInitialisationField(fileName)
-            .apply {
-                irFile.declarations.add(this)
-                parent = irFile
-            }
+                val fieldToInitializer = calculateFieldToExpression(
+                    functions
+                )
 
-        val initialisationFun = irFactory.addFunction(irFile) {
-            name = Name.identifier("init properties $fileName")
-            returnType = irBuiltIns.unitType
-            visibility = INTERNAL
-            origin = JsIrBuilder.SYNTHESIZED_DECLARATION
-        }.apply {
-            buildPropertiesInitializationBody(
-                fieldToInitializer,
-                initialisedField
-            )
-        }
+                fieldToInitializer.keys.forEach { it.fields = true }
 
-        functions
-            .asSequence()
-            .filterNotNull()
-            .forEach { function ->
-                val newBody = function.body?.let { body ->
-                    irFactory.bodyWithFunctionCall(body, initialisationFun)
+                val initialisedField = irFactory.createInitialisationField(fileName)
+                    .apply {
+                        file.declarations.add(this)
+                        parent = file
+                    }
+
+                initFun = irFactory.addFunction(file) {
+                    name = Name.identifier("init properties $fileName")
+                    returnType = irBuiltIns.unitType
+                    visibility = INTERNAL
+                    origin = JsIrBuilder.SYNTHESIZED_DECLARATION
+                }.apply {
+                    buildPropertiesInitializationBody(
+                        fieldToInitializer,
+                        initialisedField
+                    )
                 }
-                function.body = newBody
+
+                context.fileToInitialisationFuns[file] = initFun
+
+                when (irBody) {
+                    is IrExpressionBody -> {
+                        irBody.expression = JsIrBuilder.buildComposite(
+                            type = container.returnType,
+                            statements = listOf(
+                                JsIrBuilder.buildCall(
+                                    target = initFun.symbol,
+                                    type = initFun.returnType
+                                ),
+                                irBody.expression
+                            )
+                        )
+                    }
+                    is IrBlockBody -> {
+                        irBody.statements.add(
+                            0,
+                            JsIrBuilder.buildCall(
+                                target = initFun.symbol,
+                                type = initFun.returnType
+                            )
+                        )
+                    }
+                }
             }
+        }
     }
 
     private fun IrFactory.createInitialisationField(fileName: String): IrField =
@@ -94,7 +129,6 @@ class PropertyLazyInitLowering(private val context: JsIrBackendContext) : FileLo
         initializers: Map<IrField, IrExpression>,
         initialisedField: IrField
     ) {
-
         body = irFactory.createBlockBody(
             UNDEFINED_OFFSET,
             UNDEFINED_OFFSET,
@@ -105,7 +139,7 @@ class PropertyLazyInitLowering(private val context: JsIrBackendContext) : FileLo
     private fun buildBodyWithIfGuard(
         initializers: Map<IrField, IrExpression>,
         initialisedField: IrField
-    ): List<IrWhen> {
+    ): List<IrStatement> {
         val statements = initializers
             .map { (field, expression) ->
                 createIrSetField(field, expression)
@@ -124,6 +158,27 @@ class PropertyLazyInitLowering(private val context: JsIrBackendContext) : FileLo
                 statements = mutableListOf(upGuard).apply { addAll(statements) }
             )
         ).let { listOf(it) }
+    }
+}
+
+class NullizeDeclarations(
+    context: JsIrBackendContext
+) : DeclarationTransformer {
+
+    private var IrField.fields by context.mapping.lazyInitialisedFields
+
+    override fun transformFlat(declaration: IrDeclaration): List<IrDeclaration>? {
+        if (declaration is IrSimpleFunction) {
+            val field = declaration.correspondingPropertySymbol
+                ?.owner
+                ?.backingField
+
+            if (field != null && field.fields == true) {
+                field.initializer = null
+            }
+        }
+
+        return null
     }
 }
 
@@ -169,22 +224,3 @@ private fun IrFactory.bodyWithFunctionCall(
         )
     ).apply { addAll(body.statements) }
 )
-
-private class TopLevelFunsSearcher : IrElementTransformerVoid() {
-
-    private val topLevelFuns = mutableSetOf<IrSimpleFunction>()
-
-    fun search(irFile: IrFile): Set<IrSimpleFunction> {
-        irFile.transformChildrenVoid(this)
-        return topLevelFuns
-    }
-
-    override fun visitSimpleFunction(declaration: IrSimpleFunction): IrStatement {
-
-        if (declaration.isTopLevel) {
-            topLevelFuns.add(declaration)
-        }
-
-        return super.visitSimpleFunction(declaration)
-    }
-}

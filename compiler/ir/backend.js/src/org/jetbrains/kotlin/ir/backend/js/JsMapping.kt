@@ -30,6 +30,8 @@ class JsMapping : DefaultMapping() {
     val enumEntryToCorrespondingField = newMapping<IrEnumEntry, IrField>()
     val enumClassToInitEntryInstancesFun = newMapping<IrClass, IrSimpleFunction>()
 
+    val lazyInitialisedFields = newMapping<IrField, Boolean>()
+
     // Triggers `StageController.lazyLower` on access
     override fun <K : IrDeclaration, V> newMapping(): Mapping.Delegate<K, V> = object : Mapping.Delegate<K, V>() {
         private val map: MutableMap<K, V> = mutableMapOf()
