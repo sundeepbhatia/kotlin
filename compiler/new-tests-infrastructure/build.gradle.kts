@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.ideaExt.idea
+
 plugins {
     kotlin("jvm")
     id("jps-compatible")
@@ -9,6 +11,9 @@ dependencies {
     testImplementation(projectTests(":compiler:tests-common"))
     testImplementation(intellijCoreDep()) { includeJars("intellij-core") }
     testImplementation(project(":kotlin-reflect"))
+
+    testImplementation(projectTests(":generators:test-generator"))
+    testImplementation(projectTests(":compiler:new-tests-infrastructure:new-test-generator"))
 
     testImplementation(platform("org.junit:junit-bom:5.7.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -34,9 +39,21 @@ dependencies {
     }
 }
 
+val generationRoot = projectDir.resolve("tests-gen")
+
 sourceSets {
     "main" { none() }
-    "test" { projectDefault() }
+    "test" {
+        projectDefault()
+        this.java.srcDir(generationRoot.name)
+    }
+}
+
+if (kotlinBuildProperties.isInJpsBuildIdeaSync) {
+    apply(plugin = "idea")
+    idea {
+        this.module.generatedSourceDirs.add(generationRoot)
+    }
 }
 
 projectTest(parallel = true) {
