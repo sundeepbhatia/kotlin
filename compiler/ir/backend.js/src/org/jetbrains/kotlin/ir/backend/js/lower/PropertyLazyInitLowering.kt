@@ -193,7 +193,7 @@ private fun createIrSetField(field: IrField, expression: IrExpression): IrSetFie
     )
 }
 
-class RemoveInititializersForLazyProperties(
+class RemoveInitializersForLazyProperties(
     context: JsIrBackendContext
 ) : DeclarationTransformer {
 
