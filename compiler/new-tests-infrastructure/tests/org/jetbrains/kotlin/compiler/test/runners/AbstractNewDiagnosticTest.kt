@@ -14,6 +14,7 @@ import org.jetbrains.kotlin.test.frontend.classic.handlers.OldNewInferenceMetaIn
 import org.jetbrains.kotlin.test.model.BackendKind
 import org.jetbrains.kotlin.test.model.DependencyKind
 import org.jetbrains.kotlin.test.model.FrontendKind
+import org.jetbrains.kotlin.test.services.AdditionalDiagnosticsSourceFilesProvider
 import org.jetbrains.kotlin.test.services.JUnit5Assertions
 import org.jetbrains.kotlin.test.services.configuration.JvmEnvironmentConfigurator
 
@@ -30,6 +31,7 @@ abstract class AbstractNewDiagnosticTest : AbstractKotlinTest() {
 
         useConfigurators(::JvmEnvironmentConfigurator)
         useMetaInfoProcessors(::OldNewInferenceMetaInfoProcessor)
+        useAdditionalSourceProviders(::AdditionalDiagnosticsSourceFilesProvider)
 
         useFrontendFacades(::ClassicFrontendFacade)
         useFrontendHandlers(
