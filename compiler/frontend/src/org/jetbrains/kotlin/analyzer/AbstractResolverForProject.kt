@@ -171,9 +171,21 @@ abstract class AbstractResolverForProject<M : ModuleInfo>(
             ?: return delegateResolver.descriptorForModule(module) as ModuleDescriptorImpl
 
         return projectContext.storageManager.compute {
-            var moduleData = descriptorByModule.getOrPut(moduleFromThisResolver) {
-                createModuleDescriptor(moduleFromThisResolver)
+            var moduleData = descriptorByModule[moduleFromThisResolver]
+
+            if (moduleData == null) {
+                val newModuleData = createModuleDescriptor(moduleFromThisResolver)
+
+                moduleData = descriptorByModule[moduleFromThisResolver]
+
+                if (moduleData == null) {
+                    descriptorByModule[moduleFromThisResolver] = newModuleData
+                    moduleData = newModuleData
+                } else {
+                    moduleInfoByDescriptor.remove(newModuleData.moduleDescriptor)
+                }
             }
+
             if (moduleData.isOutOfDate()) {
                 moduleData = recreateModuleDescriptor(moduleFromThisResolver)
             }

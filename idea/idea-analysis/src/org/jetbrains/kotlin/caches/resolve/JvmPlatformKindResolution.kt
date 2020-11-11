@@ -55,7 +55,7 @@ class JvmPlatformKindResolution : IdePlatformKindResolution {
             "Standard library ${stdlibInfo!!.displayedName} provided for built-ins, but loading from dependencies is disabled"
         }
 
-        return if (sdkInfo != null && moduleInfo !is SdkInfo)
+        return if (sdkInfo != null)
             CacheKeyByBuiltInsDependencies(sdkInfo.sdk, stdlibInfo)
         else BuiltInsCacheKey.DefaultBuiltInsKey
     }
@@ -67,8 +67,9 @@ class JvmPlatformKindResolution : IdePlatformKindResolution {
         stdlibDependency: LibraryInfo?,
     ): KotlinBuiltIns {
         return when {
-            sdkDependency == null || moduleInfo is SdkInfo -> DefaultBuiltIns.Instance
-            stdlibDependency == null -> JvmBuiltIns(projectContext.storageManager, JvmBuiltIns.Kind.FROM_CLASS_LOADER)
+            sdkDependency == null -> DefaultBuiltIns.Instance
+            stdlibDependency == null || moduleInfo is SdkInfo ->
+                JvmBuiltIns(projectContext.storageManager, JvmBuiltIns.Kind.FROM_CLASS_LOADER)
             else -> JvmBuiltIns(projectContext.storageManager, JvmBuiltIns.Kind.FROM_DEPENDENCIES)
         }
     }

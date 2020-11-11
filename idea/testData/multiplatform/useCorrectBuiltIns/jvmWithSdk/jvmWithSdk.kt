@@ -5,7 +5,7 @@ import <!UNRESOLVED_REFERENCE!>kotlinx<!>.<!DEBUG_INFO_MISSING_UNRESOLVED!>cinte
 
 fun jvmSpecific(args: Array<String>) {
     val x: Cloneable? = null
-    args.<!UNRESOLVED_REFERENCE!>clone<!>()
+    args.clone()
 }
 
 fun nativeSpecific() {
