@@ -5,7 +5,9 @@
 
 package org.jetbrains.kotlin.test.model
 
+import org.jetbrains.kotlin.test.directives.DirectivesContainer
 import org.jetbrains.kotlin.test.services.Assertions
+import org.jetbrains.kotlin.test.services.ServiceRegistrationData
 import org.jetbrains.kotlin.test.services.TestServices
 import org.jetbrains.kotlin.test.services.assertions
 
@@ -15,6 +17,12 @@ sealed class AnalysisHandler<A : ResultingArtifact<A>>(val testServices: TestSer
 
     protected val moduleStructure: TestModuleStructure
         get() = testServices.moduleStructure
+
+    open val directivesContainers: List<DirectivesContainer>
+        get() = emptyList()
+
+    open val additionalServices: List<ServiceRegistrationData>
+        get() = emptyList()
 
     abstract fun processModule(module: TestModule, info: ResultingArtifact<A>)
 

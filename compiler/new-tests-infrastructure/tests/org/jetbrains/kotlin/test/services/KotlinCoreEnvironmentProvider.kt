@@ -34,7 +34,7 @@ val TestServices.kotlinCoreEnvironmentProvider: KotlinCoreEnvironmentProvider by
 
 class KotlinCoreEnvironmentProviderImpl(
     override val testRootDisposable: Disposable,
-    private val configurators: List<EnvironmentConfigurator>
+    val configurators: List<EnvironmentConfigurator>
 ) : KotlinCoreEnvironmentProvider() {
     override fun getKotlinCoreEnvironment(module: TestModule): KotlinCoreEnvironment {
         return KotlinCoreEnvironment.createForTests(

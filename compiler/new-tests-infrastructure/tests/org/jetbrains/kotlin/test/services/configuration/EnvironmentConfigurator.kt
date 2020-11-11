@@ -18,8 +18,8 @@ import org.jetbrains.kotlin.test.services.TestServices
 import org.jetbrains.kotlin.test.services.defaultDirectives
 
 abstract class EnvironmentConfigurator(protected val testServices: TestServices) {
-    open val directivesContainer: DirectivesContainer
-        get() = DirectivesContainer.Empty
+    open val directivesContainers: List<DirectivesContainer>
+        get() = emptyList()
 
     open val additionalServices: List<ServiceRegistrationData>
         get() = emptyList()

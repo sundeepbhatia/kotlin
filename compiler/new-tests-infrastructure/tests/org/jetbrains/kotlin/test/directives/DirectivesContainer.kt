@@ -58,7 +58,7 @@ abstract class SimpleDirectivesContainer : DirectivesContainer() {
     }
 }
 
-class ComposedDirectivesContainer(private val containers: List<DirectivesContainer>) : DirectivesContainer() {
+class ComposedDirectivesContainer(private val containers: Collection<DirectivesContainer>) : DirectivesContainer() {
     constructor(vararg containers: DirectivesContainer) : this(containers.toList())
 
     override fun get(name: String): Directive? {

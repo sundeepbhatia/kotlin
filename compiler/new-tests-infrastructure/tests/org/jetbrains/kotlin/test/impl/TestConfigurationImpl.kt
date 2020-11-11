@@ -11,7 +11,6 @@ import org.jetbrains.kotlin.test.builders.Constructor
 import org.jetbrains.kotlin.test.directives.ComposedDirectivesContainer
 import org.jetbrains.kotlin.test.directives.DirectivesContainer
 import org.jetbrains.kotlin.test.directives.RegisteredDirectives
-import org.jetbrains.kotlin.test.frontend.preprocessors.MetaInfosCleanupPreprocessor
 import org.jetbrains.kotlin.test.model.*
 import org.jetbrains.kotlin.test.services.*
 import org.jetbrains.kotlin.test.services.configuration.EnvironmentConfigurator
@@ -37,10 +36,17 @@ class TestConfigurationImpl(
 ) : TestConfiguration() {
     override val rootDisposable: Disposable = TestDisposable()
     override val testServices: TestServices = TestServices()
-    override val directives: DirectivesContainer
+
+    private val allDirectives = mutableSetOf<DirectivesContainer>()
+    override val directives: DirectivesContainer by lazy {
+        when (allDirectives.size) {
+            0 -> DirectivesContainer.Empty
+            1 -> allDirectives.single()
+            else -> ComposedDirectivesContainer(allDirectives)
+        }
+    }
 
     init {
-        val allDirectives = directives.toMutableList()
         allDirectives += defaultDirectiveContainers
 
         testServices.apply {
@@ -53,7 +59,7 @@ class TestConfigurationImpl(
             register(SourceFileProvider::class, sourceFileProvider)
 
             val configurators = environmentConfigurators.map { it.invoke(this) }
-            configurators.mapTo(allDirectives) { it.directivesContainer }
+            configurators.flatMapTo(allDirectives) { it.directivesContainers }
             for (configurator in configurators) {
                 configurator.additionalServices.forEach { register(it) }
             }
@@ -70,12 +76,6 @@ class TestConfigurationImpl(
 
             val metaInfoProcessors = additionalMetaInfoProcessors.map { it.invoke(this) }
             register(GlobalMetadataInfoHandler::class, GlobalMetadataInfoHandler(this, metaInfoProcessors))
-        }
-
-        this.directives = when (allDirectives.size) {
-            0 -> DirectivesContainer.Empty
-            1 -> allDirectives.single()
-            else -> ComposedDirectivesContainer(allDirectives)
         }
     }
 
@@ -105,16 +105,27 @@ class TestConfigurationImpl(
         }
 
     private val frontendHandlers: Map<FrontendKind<*>, List<FrontendResultsHandler<*>>> =
-        frontendHandlers.map { it.invoke(testServices) }.groupBy { it.frontendKind }.withDefault { emptyList() }
+        frontendHandlers.map { it.invoke(testServices).also(this::registerDirectivesAndServices) }
+            .groupBy { it.frontendKind }
+            .withDefault { emptyList() }
 
     private val backendHandlers: Map<BackendKind<*>, List<BackendInitialInfoHandler<*>>> =
-        backendHandlers.map { it.invoke(testServices) }.groupBy { it.backendKind }.withDefault { emptyList() }
+        backendHandlers.map { it.invoke(testServices).also(this::registerDirectivesAndServices) }
+            .groupBy { it.backendKind }
+            .withDefault { emptyList() }
 
     private val artifactsHandlers: Map<ArtifactKind<*>, List<ArtifactsResultsHandler<*>>> =
-        artifactsHandlers.map { it.invoke(testServices) }.groupBy { it.artifactKind }.withDefault { emptyList() }
+        artifactsHandlers.map { it.invoke(testServices).also(this::registerDirectivesAndServices) }
+            .groupBy { it.artifactKind }
+            .withDefault { emptyList() }
 
     private fun manyFacadesError(name: String, kinds: String): Nothing {
         error("Too many $name passed for $kinds configuration")
+    }
+
+    private fun registerDirectivesAndServices(handler: AnalysisHandler<*>) {
+        allDirectives += handler.directivesContainers
+        testServices.register(handler.additionalServices)
     }
 
     init {

@@ -30,8 +30,8 @@ import org.jetbrains.kotlin.test.util.StringUtils.joinToArrayString
 import java.io.File
 
 class JvmEnvironmentConfigurator(testServices: TestServices) : EnvironmentConfigurator(testServices) {
-    override val directivesContainer: DirectivesContainer
-        get() = JvmEnvironmentConfigurationDirectives
+    override val directivesContainers: List<DirectivesContainer>
+        get() = listOf(JvmEnvironmentConfigurationDirectives)
 
     override val additionalServices: List<ServiceRegistrationData>
         get() = listOf(service(::CompiledJarManager))
