@@ -50,6 +50,7 @@ import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.annotations.JVM_STATIC_ANNOTATION_FQ_NAME
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedContainerSource
 
 @OptIn(ObsoleteDescriptorBasedAPI::class)
@@ -447,8 +448,10 @@ class Fir2IrDeclarationStorage(
                     convertAnnotationsFromLibrary(function)
                     enterScope(this)
                     bindAndDeclareParameters(
-                        function, irParent,
-                        thisReceiverOwner, isStatic = simpleFunction?.isStatic == true
+                        function, irParent, thisReceiverOwner,
+                        isStatic = simpleFunction?.isStatic == true ||
+                                (irParent is IrClass && irParent.isObject && !irParent.isCompanion &&
+                                        function.hasAnnotation(ClassId.topLevel(JVM_STATIC_ANNOTATION_FQ_NAME)))
                     )
                     leaveScope(this)
                 }
@@ -596,8 +599,13 @@ class Fir2IrDeclarationStorage(
                 }
                 enterScope(this)
                 bindAndDeclareParameters(
-                    propertyAccessor, irParent,
-                    thisReceiverOwner, isStatic = irParent !is IrClass, parentPropertyReceiverType = property.receiverTypeRef
+                    propertyAccessor, irParent, thisReceiverOwner,
+                    isStatic = irParent !is IrClass ||
+                            (irParent.isObject && !irParent.isCompanion && (
+                                    propertyAccessor?.hasAnnotation(ClassId.topLevel(JVM_STATIC_ANNOTATION_FQ_NAME)) == true ||
+                                            property.hasAnnotation(ClassId.topLevel(JVM_STATIC_ANNOTATION_FQ_NAME))
+                                    )),
+                    parentPropertyReceiverType = property.receiverTypeRef
                 )
                 leaveScope(this)
                 if (irParent != null) {
