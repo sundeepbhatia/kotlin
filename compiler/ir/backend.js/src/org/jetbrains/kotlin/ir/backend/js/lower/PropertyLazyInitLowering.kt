@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.ir.backend.js.utils.isPure
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.buildField
 import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.declarations.persistent.PersistentIrElementBase
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.name.Name
 import kotlin.collections.component1
@@ -240,8 +241,14 @@ private val IrDeclaration.correspondingProperty: IrProperty?
 
         return when (this) {
             is IrProperty -> this
-            is IrSimpleFunction -> correspondingPropertySymbol?.owner
-            is IrField -> correspondingPropertySymbol?.owner
+            is IrSimpleFunction -> {
+                if (((this as? PersistentIrElementBase<*>)?.createdOn ?: 0) <= stageController.currentStage) {
+                    correspondingPropertySymbol?.owner
+                } else null
+            }
+            is IrField -> if (((this as? PersistentIrElementBase<*>)?.createdOn ?: 0) <= stageController.currentStage) {
+                correspondingPropertySymbol?.owner
+            } else null
             else -> error("Can be only IrProperty, IrSimpleFunction or IrField")
         }
     }
