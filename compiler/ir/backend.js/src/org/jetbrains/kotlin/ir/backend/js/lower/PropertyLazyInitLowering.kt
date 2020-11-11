@@ -39,40 +39,36 @@ class PropertyLazyInitLowering(
         get() = context.fileToInitialisationFuns
 
     override fun lower(irBody: IrBody, container: IrDeclaration) {
-        if (container is IrSimpleFunction || container is IrField) {
-            val propertySymbol = when (container) {
-                is IrSimpleFunction -> container.correspondingPropertySymbol
-                is IrField -> container.correspondingPropertySymbol
-                else -> error("Can be only IrSimpleFunction or IrField")
-            }
+        val property = container.correspondingProperty ?: return
 
-            val topLevelProperty = propertySymbol
-                ?.owner
-                ?.takeIf { it.isTopLevel }
-                ?.takeUnless { it.isConst }
-                ?.takeIf { it.backingField?.initializer != null }
-                ?: return
+        val topLevelProperty = property
+            .takeIf { it.isTopLevel }
+            ?.takeUnless { it.isConst }
+            ?.takeIf { it.backingField?.initializer != null }
+            ?: return
 
-            val file = topLevelProperty.parent as? IrFile
-                ?: return
+        val file = topLevelProperty.parent as? IrFile
+            ?: return
 
-            val initFun = fileToInitialisationFuns[file]
-                ?: createInitialisationFunction(file)?.also { fileToInitialisationFuns[file] = it }
-                ?: return
+        val initFun = fileToInitialisationFuns[file]
+            ?: createInitialisationFunction(file)?.also { fileToInitialisationFuns[file] = it }
+            ?: return
 
-            val initialisationCall = JsIrBuilder.buildCall(
-                target = initFun.symbol,
-                type = initFun.returnType
-            )
+        val initialisationCall = JsIrBuilder.buildCall(
+            target = initFun.symbol,
+            type = initFun.returnType
+        )
 
-            if (container is IrSimpleFunction) {
+        when (container) {
+            is IrSimpleFunction ->
                 irBody.addInitialisation(initialisationCall, container)
-            }
-            if (container is IrField) {
-                container.correspondingPropertySymbol?.owner?.getter
-                    ?.let { irBody.addInitialisation(initialisationCall, it) }
-                container.correspondingPropertySymbol?.owner?.setter
-                    ?.let { irBody.addInitialisation(initialisationCall, it) }
+            is IrField -> {
+                property
+                    .let { listOf(it.getter, it.setter) }
+                    .filterNotNull()
+                    .forEach {
+                        irBody.addInitialisation(initialisationCall, it)
+                    }
             }
         }
     }
@@ -196,18 +192,25 @@ private fun createIrSetField(field: IrField, expression: IrExpression): IrSetFie
     )
 }
 
+private fun IrProperty.isForLazyInit() = isTopLevel && !isConst
+
+private val IrDeclaration.correspondingProperty: IrProperty?
+    get() {
+        if (this !is IrSimpleFunction && this !is IrField && this !is IrProperty)
+            return null
+
+        return when (this) {
+            is IrProperty -> this
+            is IrSimpleFunction -> correspondingPropertySymbol?.owner
+            is IrField -> correspondingPropertySymbol?.owner
+            else -> error("Can be only IrProperty, IrSimpleFunction or IrField")
+        }
+    }
+
 private fun calculateFieldToExpression(declarations: Collection<IrDeclaration>): Map<IrField, IrExpression> =
     declarations
         .asSequence()
-        .map {
-            when (it) {
-                is IrProperty -> it
-                is IrSimpleFunction -> {
-                    it.correspondingPropertySymbol?.owner
-                }
-                else -> null
-            }
-        }
+        .map { it.correspondingProperty }
         .filterNotNull()
         .filter { it.isTopLevel }
         .filterNot { it.isConst }
@@ -237,29 +240,10 @@ class RemoveInitializersForLazyProperties(
             return null
         }
 
-        if (declaration is IrProperty) {
-            if (declaration.isTopLevel && !declaration.isConst) {
-                declaration.backingField?.initializer = null
-            }
-        }
-        if (declaration is IrField) {
-            val property = declaration.correspondingPropertySymbol?.owner ?: return null
-            if (property.isTopLevel && !property.isConst) {
-                declaration.initializer = null
-            }
-        }
-        if (declaration is IrSimpleFunction) {
-
-            val field = declaration.correspondingPropertySymbol
-                ?.owner
-                ?.takeIf { it.isTopLevel }
-                ?.takeUnless { it.isConst }
-                ?.backingField
-
-            if (field != null) {
-                field.initializer = null
-            }
-        }
+        declaration.correspondingProperty
+            ?.takeIf { it.isForLazyInit() }
+            ?.backingField
+            ?.let { it.initializer = null }
 
         return null
     }
