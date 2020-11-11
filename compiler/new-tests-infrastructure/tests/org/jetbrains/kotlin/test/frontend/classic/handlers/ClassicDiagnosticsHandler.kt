@@ -44,6 +44,8 @@ class ClassicDiagnosticsHandler(testServices: TestServices) : ClassicFrontendAna
             it.psiFile
         }
 
+        val withNewInferenceModeEnabled = testServices.withNewInferenceModeEnabled(module)
+
         val configuration = DiagnosticsRenderingConfiguration(
             platform = null,
             withNewInference = info.languageVersionSettings.supportsFeature(LanguageFeature.NewInference),
@@ -57,18 +59,28 @@ class ClassicDiagnosticsHandler(testServices: TestServices) : ClassicFrontendAna
             val diagnostics = diagnosticsPerFile[ktFile] ?: continue
             for (diagnostic in diagnostics) {
                 if (!diagnosticsService.shouldRenderDiagnostic(module, diagnostic.factory.name)) continue
-                globalMetadataInfoHandler.addMetadataInfosForFile(file, diagnostic.toMetaInfo(file, configuration.withNewInference))
+                globalMetadataInfoHandler.addMetadataInfosForFile(
+                    file,
+                    diagnostic.toMetaInfo(
+                        file,
+                        configuration.withNewInference,
+                        withNewInferenceModeEnabled
+                    )
+                )
             }
-            processDebugInfoDiagnostics(configuration, file, ktFile, info)
+            processDebugInfoDiagnostics(configuration, file, ktFile, info, withNewInferenceModeEnabled)
         }
     }
 
     private fun Diagnostic.toMetaInfo(
         file: TestFile,
-        newInferenceEnabled: Boolean
+        newInferenceEnabled: Boolean,
+        withNewInferenceModeEnabled: Boolean
     ): List<DiagnosticCodeMetaInfo> = textRanges.map { range ->
         val metaInfo = DiagnosticCodeMetaInfo(range, ClassicMetaInfoUtils.renderDiagnosticNoArgs, this)
-        metaInfo.attributes += if (newInferenceEnabled) OldNewInferenceMetaInfoProcessor.NI else OldNewInferenceMetaInfoProcessor.OI
+        if (withNewInferenceModeEnabled) {
+            metaInfo.attributes += if (newInferenceEnabled) OldNewInferenceMetaInfoProcessor.NI else OldNewInferenceMetaInfoProcessor.OI
+        }
         val existing = globalMetadataInfoHandler.getExistingMetaInfosForActualMetadata(file, metaInfo)
         if (existing.any { it.description != null }) {
             metaInfo.replaceRenderConfiguration(ClassicMetaInfoUtils.renderDiagnosticWithArgs)
@@ -80,7 +92,8 @@ class ClassicDiagnosticsHandler(testServices: TestServices) : ClassicFrontendAna
         configuration: DiagnosticsRenderingConfiguration,
         file: TestFile,
         ktFile: KtFile,
-        info: ClassicFrontendSourceArtifacts
+        info: ClassicFrontendSourceArtifacts,
+        withNewInferenceModeEnabled: Boolean
     ) {
         val debugAnnotations = CheckerTestUtil.getDebugInfoDiagnostics(
             ktFile,
@@ -95,7 +108,7 @@ class ClassicDiagnosticsHandler(testServices: TestServices) : ClassicFrontendAna
         debugAnnotations.map { debugAnnotation ->
             globalMetadataInfoHandler.addMetadataInfosForFile(
                 file,
-                debugAnnotation.diagnostic.toMetaInfo(file, configuration.withNewInference)
+                debugAnnotation.diagnostic.toMetaInfo(file, configuration.withNewInference, withNewInferenceModeEnabled)
             )
         }
     }
@@ -122,6 +135,7 @@ class OldNewInferenceMetaInfoProcessor(testServices: TestServices) : AdditionalM
      *       ^ existed
      */
     override fun processMetaInfos(module: TestModule, file: TestFile) {
+        if (!testServices.withNewInferenceModeEnabled(module)) return
         val newInferenceEnabled = module.languageVersionSettings.supportsFeature(LanguageFeature.NewInference)
         val (currentFlag, otherFlag) = when (newInferenceEnabled) {
             true -> NI to OI
@@ -163,4 +177,9 @@ class OldNewInferenceMetaInfoProcessor(testServices: TestServices) : AdditionalM
         }
         globalMetadataInfoHandler.addMetadataInfosForFile(file, newInfos)
     }
+}
+
+private fun TestServices.withNewInferenceModeEnabled(module: TestModule): Boolean {
+    return moduleStructure.globalDirectives.contains(DiagnosticsDirectives.withNewInference) ||
+            module.directives.contains(DiagnosticsDirectives.withNewInference)
 }
