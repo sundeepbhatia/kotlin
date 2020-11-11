@@ -35,11 +35,17 @@ class PropertyLazyInitLowering(
     private val irFactory
         get() = context.irFactory
 
-    private var IrField.fields by context.mapping.lazyInitialisedFields
+    var IrField.initializers by context.mapping.lazyInitialisedFields
 
     override fun lower(irBody: IrBody, container: IrDeclaration) {
-        if (container is IrSimpleFunction) {
-            val topLevelProperty = container.correspondingPropertySymbol
+        if (container is IrSimpleFunction || container is IrField) {
+            val propertySymbol = when (container) {
+                is IrSimpleFunction -> container.correspondingPropertySymbol
+                is IrField -> container.correspondingPropertySymbol
+                else -> error("Can be only SimpelFunction or IrField")
+            }
+
+            val topLevelProperty = propertySymbol
                 ?.owner
                 ?.takeIf { it.isTopLevel }
                 ?.takeUnless { it.isConst }
@@ -58,7 +64,15 @@ class PropertyLazyInitLowering(
                 type = initFun.returnType
             )
 
-            irBody.addInitialisation(initialisationCall, container)
+            if (container is IrSimpleFunction) {
+                irBody.addInitialisation(initialisationCall, container)
+            }
+            if (container is IrField) {
+                container.correspondingPropertySymbol?.owner?.getter
+                    ?.let { irBody.addInitialisation(initialisationCall, it) }
+                container.correspondingPropertySymbol?.owner?.setter
+                    ?.let { irBody.addInitialisation(initialisationCall, it) }
+            }
         }
     }
 
@@ -76,9 +90,6 @@ class PropertyLazyInitLowering(
         if (fieldToInitializer.all { it.value.isPure(anyVariable = true) }) {
             return null
         }
-
-
-        fieldToInitializer.onEach { (key, _) -> key.fields = true }
 
         val initialisedField = irFactory.createInitialisationField(fileName)
             .apply {
@@ -142,6 +153,28 @@ class PropertyLazyInitLowering(
             )
         ).let { listOf(it) }
     }
+
+    private fun calculateFieldToExpression(declarations: Collection<IrDeclaration>): Map<IrField, IrExpression> =
+        declarations
+            .asSequence()
+            .map {
+                when (it) {
+                    is IrProperty -> it
+                    is IrSimpleFunction -> {
+                        it.correspondingPropertySymbol?.owner
+                    }
+                    else -> null
+                }
+            }
+            .filterNotNull()
+            .filter { it.isTopLevel }
+            .filterNot { it.isConst }
+            .distinct()
+            .mapNotNull { it.backingField }
+            .filter { it.initializer != null || it.initializers != null }
+            .map { it to (it.initializers ?: it.initializer!!.expression) }
+            .toMap()
+
 }
 
 private fun IrBody.addInitialisation(
@@ -167,26 +200,6 @@ private fun IrBody.addInitialisation(
     }
 }
 
-private fun calculateFieldToExpression(functions: Collection<IrDeclaration>): Map<IrField, IrExpression> =
-    functions
-        .asSequence()
-        .flatMap {
-            when (it) {
-                is IrProperty -> sequenceOf(it.getter, it.setter)
-                is IrSimpleFunction -> sequenceOf(it)
-                else -> sequenceOf(null)
-            }
-        }
-        .filterNotNull()
-        .mapNotNull { it.correspondingPropertySymbol }
-        .map { it.owner }
-        .filter { it.isTopLevel }
-        .filterNot { it.isConst }
-        .distinct()
-        .mapNotNull { it.backingField }
-        .filter { it.initializer != null }
-        .map { it to it.initializer!!.expression }
-        .toMap()
 
 private fun createIrGetField(field: IrField): IrGetField {
     return JsIrBuilder.buildGetField(
@@ -208,15 +221,57 @@ class RemoveInitializersForLazyProperties(
     context: JsIrBackendContext
 ) : DeclarationTransformer {
 
-    private var IrField.fields by context.mapping.lazyInitialisedFields
+    var IrField.initializers by context.mapping.lazyInitialisedFields
 
     override fun transformFlat(declaration: IrDeclaration): List<IrDeclaration>? {
+        val file = declaration.parent as? IrFile ?: return null
+        val declarations = ArrayList(file.declarations)
+
+        val fields = declarations
+            .asSequence()
+            .map {
+                when (it) {
+                    is IrProperty -> it
+                    is IrSimpleFunction -> {
+                        it.correspondingPropertySymbol?.owner
+                    }
+                    else -> null
+                }
+            }
+            .filterNotNull()
+            .filter { it.isTopLevel }
+            .filterNot { it.isConst }
+            .distinct()
+            .mapNotNull { it.backingField }
+            .filter { it.initializer != null }
+            .map { it.initializer!!.expression }
+
+        if (fields.all { it.isPure(anyVariable = true) }) {
+            return null
+        }
+        if (declaration is IrProperty) {
+            if (declaration.isTopLevel && !declaration.isConst) {
+                declaration.backingField?.initializers = declaration.backingField?.initializer?.expression
+                declaration.backingField?.initializer = null
+            }
+        }
+        if (declaration is IrField) {
+            val property = declaration.correspondingPropertySymbol?.owner ?: return null
+            if (property.isTopLevel && !property.isConst) {
+                declaration.initializers = declaration.initializer?.expression
+                declaration.initializer = null
+            }
+        }
         if (declaration is IrSimpleFunction) {
+
             val field = declaration.correspondingPropertySymbol
                 ?.owner
+                ?.takeIf { it.isTopLevel }
+                ?.takeUnless { it.isConst }
                 ?.backingField
 
-            if (field != null && field.fields == true) {
+            if (field != null) {
+                field.initializers = field.initializer?.expression
                 field.initializer = null
             }
         }
