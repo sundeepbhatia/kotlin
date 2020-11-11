@@ -18,10 +18,9 @@ class TestRunner(private val testConfiguration: TestConfiguration) {
 
     fun runTest(@TestDataFile testDataFileName: String) {
         val services = testConfiguration.testServices
-        val moduleStructure = ModuleStructureExtractor.splitTestDataByModules(
+        val moduleStructure = testConfiguration.moduleStructureExtractor.splitTestDataByModules(
             testDataFileName,
             testConfiguration.directives,
-            services
         ).also {
             services.register(TestModuleStructure::class, it)
         }

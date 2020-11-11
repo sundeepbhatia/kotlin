@@ -31,6 +31,9 @@ class TestConfigurationImpl(
     sourcePreprocessors: List<Constructor<SourceFilePreprocessor>>,
     additionalMetaInfoProcessors: List<Constructor<AdditionalMetaInfoProcessor>>,
     environmentConfigurators: List<Constructor<EnvironmentConfigurator>>,
+
+    additionalSourceProviders: List<Constructor<AdditionalSourceProvider>>,
+
     directives: List<DirectivesContainer>,
     override val defaultRegisteredDirectives: RegisteredDirectives
 ) : TestConfiguration() {
@@ -45,6 +48,13 @@ class TestConfigurationImpl(
             else -> ComposedDirectivesContainer(allDirectives)
         }
     }
+
+    override val moduleStructureExtractor: ModuleStructureExtractor = ModuleStructureExtractor(
+        testServices,
+        additionalSourceProviders.map { it.invoke(testServices) }.also {
+            it.flatMapTo(allDirectives) { provider -> provider.directives }
+        }
+    )
 
     init {
         allDirectives += defaultDirectiveContainers

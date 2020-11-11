@@ -9,8 +9,10 @@ import com.intellij.openapi.Disposable
 import org.jetbrains.kotlin.test.builders.Constructor
 import org.jetbrains.kotlin.test.directives.DirectivesContainer
 import org.jetbrains.kotlin.test.directives.LanguageSettingsDirectives
+import org.jetbrains.kotlin.test.directives.ModuleStructureDirectives
 import org.jetbrains.kotlin.test.directives.RegisteredDirectives
 import org.jetbrains.kotlin.test.frontend.preprocessors.MetaInfosCleanupPreprocessor
+import org.jetbrains.kotlin.test.impl.ModuleStructureExtractor
 import org.jetbrains.kotlin.test.model.*
 import org.jetbrains.kotlin.test.services.SourceFilePreprocessor
 import org.jetbrains.kotlin.test.services.TestServices
@@ -35,6 +37,8 @@ abstract class TestConfiguration {
     abstract val directives: DirectivesContainer
 
     abstract val defaultRegisteredDirectives: RegisteredDirectives
+
+    abstract val moduleStructureExtractor: ModuleStructureExtractor
 
     abstract fun <R : ResultingArtifact.Source<R>> getFrontendFacade(frontendKind: FrontendKind<R>): FrontendFacade<R>
 

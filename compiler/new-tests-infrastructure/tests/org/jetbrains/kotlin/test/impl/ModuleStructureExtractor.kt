@@ -14,22 +14,27 @@ import org.jetbrains.kotlin.test.util.StringUtils.joinToArrayString
 import org.jetbrains.kotlin.utils.DFS
 import java.io.File
 
-class ModuleStructureExtractor private constructor(
+class ModuleStructureExtractor(
+    private val testServices: TestServices,
+    private val additionalSourceProviders: List<AdditionalSourceProvider>
+) {
+    fun splitTestDataByModules(
+        testDataFileName: String,
+        directivesContainer: DirectivesContainer,
+    ): TestModuleStructure {
+        val testDataFile = File(testDataFileName)
+        val extractor = ModuleStructureExtractorWorker(listOf(testDataFile), directivesContainer, testServices, additionalSourceProviders)
+        return extractor.splitTestDataByModules()
+    }
+}
+
+private class ModuleStructureExtractorWorker constructor(
     private val testDataFiles: List<File>,
     private val directivesContainer: DirectivesContainer,
-    private val testServices: TestServices
+    private val testServices: TestServices,
+    private val additionalSourceProviders: List<AdditionalSourceProvider>
 ) {
     companion object {
-        fun splitTestDataByModules(
-            testDataFileName: String,
-            directivesContainer: DirectivesContainer,
-            testServices: TestServices
-        ): TestModuleStructure {
-            val testDataFile = File(testDataFileName)
-            val extractor = ModuleStructureExtractor(listOf(testDataFile), directivesContainer, testServices)
-            return extractor.splitTestDataByModules()
-        }
-
         private val allowedExtensionsForFiles = listOf(".kt", ".java")
     }
 
@@ -190,7 +195,7 @@ class ModuleStructureExtractor private constructor(
         finishFile()
         val moduleDirectives = directivesBuilder.build()
         currentModuleLanguageVersionSettingsBuilder.configureUsingDirectives(moduleDirectives)
-        modules += TestModule(
+        val testModule = TestModule(
             name = currentModuleName ?: defaultModuleName,
             targetPlatform = currentModuleTargetPlatform ?: defaultsProvider.defaultPlatform,
             frontendKind = currentModuleFrontendKind ?: defaultsProvider.defaultFrontend,
@@ -200,6 +205,14 @@ class ModuleStructureExtractor private constructor(
             directives = moduleDirectives,
             languageVersionSettings = currentModuleLanguageVersionSettingsBuilder.build()
         )
+        modules += testModule
+        additionalSourceProviders.flatMapTo(filesOfCurrentModule) { additionalSourceProvider ->
+            additionalSourceProvider.produceAdditionalFiles(globalDirectives!!, testModule).also { additionalFiles ->
+                require(additionalFiles.all { it.isAdditional }) {
+                    "Files produced by ${additionalSourceProvider::class.qualifiedName} should have flag `isAdditional = true`"
+                }
+            }
+        }
         firstFileInModule = true
         resetModuleCaches()
     }
@@ -210,7 +223,8 @@ class ModuleStructureExtractor private constructor(
                 name = currentFileName ?: defaultFileName,
                 originalContent = linesOfCurrentFile.joinToString(separator = System.lineSeparator(), postfix = System.lineSeparator()),
                 originalFile = currentTestDataFile,
-                startLineNumberInOriginalFile = startLineNumberOfCurrentFile
+                startLineNumberInOriginalFile = startLineNumberOfCurrentFile,
+                isAdditional = false
             )
         )
         firstFileInModule = false

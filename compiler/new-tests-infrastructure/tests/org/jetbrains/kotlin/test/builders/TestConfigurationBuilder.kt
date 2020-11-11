@@ -30,6 +30,8 @@ class TestConfigurationBuilder {
     private val additionalMetaInfoProcessors: MutableList<Constructor<AdditionalMetaInfoProcessor>> = mutableListOf()
     private val environmentConfigurators: MutableList<Constructor<EnvironmentConfigurator>> = mutableListOf()
 
+    private val additionalSourceProviders: MutableList<Constructor<AdditionalSourceProvider>> = mutableListOf()
+
     private val directives: MutableList<DirectivesContainer> = mutableListOf()
     val defaultRegisteredDirectivesBuilder: RegisteredDirectivesBuilder = RegisteredDirectivesBuilder()
 
@@ -77,6 +79,10 @@ class TestConfigurationBuilder {
         additionalMetaInfoProcessors += updaters
     }
 
+    fun useAdditionalSourceProviders(vararg providers: Constructor<AdditionalSourceProvider>) {
+        additionalSourceProviders += providers
+    }
+
     inline fun defaultDirectives(init: RegisteredDirectivesBuilder.() -> Unit) {
         defaultRegisteredDirectivesBuilder.apply(init)
     }
@@ -94,6 +100,7 @@ class TestConfigurationBuilder {
             sourcePreprocessors,
             additionalMetaInfoProcessors,
             environmentConfigurators,
+            additionalSourceProviders,
             directives,
             defaultRegisteredDirectivesBuilder.build()
         )
