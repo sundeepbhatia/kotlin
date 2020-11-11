@@ -42,8 +42,7 @@ class PropertyLazyInitLowering(
         val property = container.correspondingProperty ?: return
 
         val topLevelProperty = property
-            .takeIf { it.isTopLevel }
-            ?.takeUnless { it.isConst }
+            .takeIf { it.isForLazyInit() }
             ?.takeIf { it.backingField?.initializer != null }
             ?: return
 
@@ -175,7 +174,6 @@ private fun IrBody.addInitialisation(
     }
 }
 
-
 private fun createIrGetField(field: IrField): IrGetField {
     return JsIrBuilder.buildGetField(
         symbol = field.symbol,
@@ -191,34 +189,6 @@ private fun createIrSetField(field: IrField, expression: IrExpression): IrSetFie
         type = expression.type
     )
 }
-
-private fun IrProperty.isForLazyInit() = isTopLevel && !isConst
-
-private val IrDeclaration.correspondingProperty: IrProperty?
-    get() {
-        if (this !is IrSimpleFunction && this !is IrField && this !is IrProperty)
-            return null
-
-        return when (this) {
-            is IrProperty -> this
-            is IrSimpleFunction -> correspondingPropertySymbol?.owner
-            is IrField -> correspondingPropertySymbol?.owner
-            else -> error("Can be only IrProperty, IrSimpleFunction or IrField")
-        }
-    }
-
-private fun calculateFieldToExpression(declarations: Collection<IrDeclaration>): Map<IrField, IrExpression> =
-    declarations
-        .asSequence()
-        .map { it.correspondingProperty }
-        .filterNotNull()
-        .filter { it.isTopLevel }
-        .filterNot { it.isConst }
-        .distinct()
-        .mapNotNull { it.backingField }
-        .filter { it.initializer != null }
-        .map { it to it.initializer!!.expression }
-        .toMap()
 
 private fun allFieldsInFilePure(fieldToInitializer: Collection<IrExpression>) =
     fieldToInitializer.all { it.isPure(anyVariable = true) }
@@ -248,3 +218,30 @@ class RemoveInitializersForLazyProperties(
         return null
     }
 }
+
+private fun calculateFieldToExpression(declarations: Collection<IrDeclaration>): Map<IrField, IrExpression> =
+    declarations
+        .asSequence()
+        .map { it.correspondingProperty }
+        .filterNotNull()
+        .filter { it.isForLazyInit() }
+        .distinct()
+        .mapNotNull { it.backingField }
+        .filter { it.initializer != null }
+        .map { it to it.initializer!!.expression }
+        .toMap()
+
+private fun IrProperty.isForLazyInit() = isTopLevel && !isConst
+
+private val IrDeclaration.correspondingProperty: IrProperty?
+    get() {
+        if (this !is IrSimpleFunction && this !is IrField && this !is IrProperty)
+            return null
+
+        return when (this) {
+            is IrProperty -> this
+            is IrSimpleFunction -> correspondingPropertySymbol?.owner
+            is IrField -> correspondingPropertySymbol?.owner
+            else -> error("Can be only IrProperty, IrSimpleFunction or IrField")
+        }
+    }
