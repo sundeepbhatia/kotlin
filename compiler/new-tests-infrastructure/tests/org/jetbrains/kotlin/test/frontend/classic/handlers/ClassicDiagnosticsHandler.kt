@@ -17,6 +17,8 @@ import org.jetbrains.kotlin.diagnostics.Diagnostic
 import org.jetbrains.kotlin.js.inline.util.zipWithDefault
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.calls.smartcasts.DataFlowValueFactoryImpl
+import org.jetbrains.kotlin.test.directives.DiagnosticsDirectives
+import org.jetbrains.kotlin.test.directives.DirectivesContainer
 import org.jetbrains.kotlin.test.frontend.classic.ClassicFrontendSourceArtifacts
 import org.jetbrains.kotlin.test.model.TestFile
 import org.jetbrains.kotlin.test.model.TestModule
@@ -24,8 +26,17 @@ import org.jetbrains.kotlin.test.model.moduleStructure
 import org.jetbrains.kotlin.test.services.*
 
 class ClassicDiagnosticsHandler(testServices: TestServices) : ClassicFrontendAnalysisHandler(testServices) {
+    override val directivesContainers: List<DirectivesContainer> =
+        listOf(DiagnosticsDirectives)
+
+    override val additionalServices: List<ServiceRegistrationData> =
+        listOf(service(::DiagnosticsService))
+
     private val globalMetadataInfoHandler: GlobalMetadataInfoHandler
         get() = testServices.globalMetadataInfoHandler
+
+    private val diagnosticsService: DiagnosticsService
+        get() = testServices.diagnosticsService
 
     @OptIn(ExperimentalStdlibApi::class)
     override fun processModule(module: TestModule, info: ClassicFrontendSourceArtifacts) {
@@ -45,6 +56,7 @@ class ClassicDiagnosticsHandler(testServices: TestServices) : ClassicFrontendAna
             val ktFile = info.psiFiles[file] ?: continue
             val diagnostics = diagnosticsPerFile[ktFile] ?: continue
             for (diagnostic in diagnostics) {
+                if (!diagnosticsService.shouldRenderDiagnostic(module, diagnostic.factory.name)) continue
                 globalMetadataInfoHandler.addMetadataInfosForFile(file, diagnostic.toMetaInfo(file, configuration.withNewInference))
             }
             processDebugInfoDiagnostics(configuration, file, ktFile, info)
