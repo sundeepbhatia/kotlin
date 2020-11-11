@@ -37,7 +37,7 @@ class TestConfigurationImpl(
     override val rootDisposable: Disposable = TestDisposable()
     override val testServices: TestServices = TestServices()
 
-    private val allDirectives = mutableSetOf<DirectivesContainer>()
+    private val allDirectives = directives.toMutableSet()
     override val directives: DirectivesContainer by lazy {
         when (allDirectives.size) {
             0 -> DirectivesContainer.Empty
