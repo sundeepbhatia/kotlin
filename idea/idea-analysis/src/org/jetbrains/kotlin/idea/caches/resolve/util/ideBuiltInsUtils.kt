@@ -23,9 +23,11 @@ private object ClassLoaderBuiltInsModuleFilters : ModuleFilters {
 
 private class DependencyBuiltinsModuleFilters(private val project: Project) : ModuleFilters {
     override fun sdkFacadeFilter(module: IdeaModuleInfo): Boolean =
-        module is SdkInfo || module is LibraryInfo && module.isKotlinStdlib(project)
+        module is SdkInfo || module is LibraryInfo && module.isCoreKotlinLibrary(project)
 
-    override fun libraryFacadeFilter(module: IdeaModuleInfo): Boolean = module is LibraryInfo && !module.isKotlinStdlib(project)
+    override fun libraryFacadeFilter(module: IdeaModuleInfo): Boolean =
+        module is LibraryInfo && !module.isCoreKotlinLibrary(project)
+
     override fun moduleFacadeFilter(module: IdeaModuleInfo): Boolean = !module.isLibraryClasses()
 }
 

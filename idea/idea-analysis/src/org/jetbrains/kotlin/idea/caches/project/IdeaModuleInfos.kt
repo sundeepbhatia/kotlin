@@ -366,12 +366,16 @@ abstract class LibraryInfo(override val project: Project, val library: Library) 
         *   resolve them
         * - Builtins are created in BuiltinsCache -> module descriptors should be resolved under lock of the
         *   SDK resolver to prevent deadlocks
-        * This means we have to assume that standard library has no dependencies on other libraries or effectively
-        * drop resolver for SDK otherwise. Libraries depend on superset of their actual dependencies, so moving
-        * stdlib with all dependencies down is a questionable option.
+        * This means we have to maintain dependencies of the standard library manually or effectively drop
+        * resolver for SDK otherwise. Libraries depend on superset of their actual dependencies because of
+        * the inability to get real dependencies from IDEA model. So moving stdlib with all dependencies
+        * down is a questionable option.
         */
-        if (IdeBuiltInsLoadingState.isFromClassLoader || !this.isKotlinStdlib(project))
+        if (!IdeBuiltInsLoadingState.isFromClassLoader && this.isKotlinStdlib(project)) {
+            libraries.filterTo(result) { it.isKotlinStdlibDependency(project) }
+        } else {
             result.addAll(libraries)
+        }
 
         return result.toList()
     }

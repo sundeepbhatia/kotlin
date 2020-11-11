@@ -65,5 +65,12 @@ class KotlinStdlibCacheImpl(val project: Project) : KotlinStdlibCache {
     }
 }
 
+fun LibraryInfo.isCoreKotlinLibrary(project: Project): Boolean =
+    isKotlinStdlib(project) || isKotlinStdlibDependency(project)
+
 fun LibraryInfo.isKotlinStdlib(project: Project): Boolean =
     KotlinStdlibCache.getInstance(project).isStdlib(this)
+
+// TODO: proper condition and caching
+fun LibraryInfo.isKotlinStdlibDependency(project: Project): Boolean =
+    this.name.asString().split(":").any { it.contains("stdlib-common") }
