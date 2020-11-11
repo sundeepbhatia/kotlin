@@ -17,8 +17,8 @@ import org.jetbrains.kotlin.backend.jvm.JvmLoweredDeclarationOrigin
 import org.jetbrains.kotlin.backend.jvm.ir.copyCorrespondingPropertyFrom
 import org.jetbrains.kotlin.backend.jvm.ir.isInCurrentModule
 import org.jetbrains.kotlin.backend.jvm.ir.replaceThisByStaticReference
-import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.buildFun
 import org.jetbrains.kotlin.ir.builders.irCall
@@ -138,11 +138,7 @@ private class SingletonObjectJvmStaticLowering(
             // dispatch receiver parameter is already null for synthetic property annotation methods
             jvmStaticFunction.dispatchReceiverParameter?.let { oldDispatchReceiverParameter ->
                 jvmStaticFunction.dispatchReceiverParameter = null
-                jvmStaticFunction.body = jvmStaticFunction.body?.replaceThisByStaticReference(
-                    context.cachedDeclarations,
-                    irClass,
-                    oldDispatchReceiverParameter
-                )
+                jvmStaticFunction.replaceThisByStaticReference(context.cachedDeclarations, irClass, oldDispatchReceiverParameter)
             }
         }
     }
