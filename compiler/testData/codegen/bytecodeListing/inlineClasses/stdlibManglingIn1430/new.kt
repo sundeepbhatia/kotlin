@@ -1,5 +1,5 @@
-package kotlin
+package test
 
 inline class IC(val i: Int)
 
-fun foo(ic: IC) {}
+fun foo(i: Int, ic: IC) {}

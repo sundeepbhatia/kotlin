@@ -77,7 +77,7 @@ object InlineClassAbi {
         val suffix = if (useOldMangleRules || irFunction.isFunctionFromStdlib()) {
             when {
                 irFunction.fullValueParameterList.any { it.type.requiresMangling } ->
-                    hashSuffix(irFunction, false, useOldMangleRules)
+                    hashSuffix(irFunction, mangleReturnTypes = false, useOldMangleRules = true)
                 mangleReturnTypes && irFunction.hasMangledReturnType ->
                     returnHashSuffix(irFunction)
                 (irFunction.parent as? IrClass)?.isInline == true &&
@@ -89,7 +89,7 @@ object InlineClassAbi {
         } else {
             when {
                 irFunction.fullValueParameterList.any { it.type.requiresMangling } || (mangleReturnTypes && irFunction.hasMangledReturnType) ->
-                    hashSuffix(irFunction, mangleReturnTypes, useOldMangleRules)
+                    hashSuffix(irFunction, mangleReturnTypes, false)
                 (irFunction.parent as? IrClass)?.isInline == true &&
                         irFunction.origin != IrDeclarationOrigin.IR_BUILTINS_STUB ->
                     "impl"

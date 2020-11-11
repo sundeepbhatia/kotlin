@@ -40,7 +40,7 @@ fun getManglingSuffixBasedOnKotlinSignature(
 
     if (useOldManglingRules || descriptor.isFunctionFromStdlib()) {
         if (requiresFunctionNameManglingForParameterTypes(descriptor)) {
-            return "-" + md5base64(collectSignatureForMangling(descriptor, useOldManglingRules))
+            return "-" + md5base64(collectSignatureForMangling(descriptor, true))
         }
 
         // If a class member function returns inline class value, mangle its name.
@@ -50,7 +50,7 @@ fun getManglingSuffixBasedOnKotlinSignature(
             if (requiresFunctionNameManglingForReturnType(unwrappedDescriptor)) {
                 return "-" + md5base64(
                     ":" + getSignatureElementForMangling(
-                        unwrappedDescriptor.returnType!!, useOldManglingRules
+                        unwrappedDescriptor.returnType!!, true
                     )
                 )
             }
@@ -63,9 +63,9 @@ fun getManglingSuffixBasedOnKotlinSignature(
             // If a class member function returns inline class value, mangle its name.
             // NB here function can be a suspend function JVM view with return type replaced with 'Any',
             // should unwrap it and take original return type instead.
-            val signature = collectSignatureForMangling(descriptor, useOldManglingRules) +
+            val signature = collectSignatureForMangling(descriptor, false) +
                     if (shouldMangleByReturnType && requiresFunctionNameManglingForReturnType(unwrappedDescriptor))
-                        ":" + getSignatureElementForMangling(unwrappedDescriptor.returnType!!, useOldManglingRules)
+                        ":" + getSignatureElementForMangling(unwrappedDescriptor.returnType!!, false)
                     else ""
             return "-" + md5base64(signature)
         }
