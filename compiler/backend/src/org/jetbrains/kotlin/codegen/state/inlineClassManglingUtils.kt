@@ -7,8 +7,10 @@ package org.jetbrains.kotlin.codegen.state
 
 import org.jetbrains.kotlin.codegen.coroutines.unwrapInitialDescriptorForSuspendFunction
 import org.jetbrains.kotlin.descriptors.*
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.InlineClassDescriptorResolver
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameUnsafe
 import org.jetbrains.kotlin.resolve.jvm.requiresFunctionNameManglingForParameterTypes
 import org.jetbrains.kotlin.resolve.jvm.requiresFunctionNameManglingForReturnType
@@ -18,6 +20,8 @@ import java.security.MessageDigest
 import java.util.*
 
 const val NOT_INLINE_CLASS_PARAMETER_PLACEHOLDER = "_"
+
+private fun FunctionDescriptor.isFunctionFromStdlib(): Boolean = fqNameSafe.startsWith(Name.identifier("kotlin"))
 
 fun getManglingSuffixBasedOnKotlinSignature(
     descriptor: CallableMemberDescriptor,
@@ -34,7 +38,7 @@ fun getManglingSuffixBasedOnKotlinSignature(
 
     val unwrappedDescriptor = descriptor.unwrapInitialDescriptorForSuspendFunction()
 
-    if (useOldManglingRules) {
+    if (useOldManglingRules || descriptor.isFunctionFromStdlib()) {
         if (requiresFunctionNameManglingForParameterTypes(descriptor)) {
             return "-" + md5base64(collectSignatureForMangling(descriptor, useOldManglingRules))
         }
