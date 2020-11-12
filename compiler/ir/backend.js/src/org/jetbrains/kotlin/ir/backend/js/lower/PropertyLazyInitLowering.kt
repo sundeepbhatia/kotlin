@@ -12,6 +12,7 @@ import org.jetbrains.kotlin.descriptors.DescriptorVisibilities.INTERNAL
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.backend.js.JsIrBackendContext
+import org.jetbrains.kotlin.ir.backend.js.JsLoweredDeclarationOrigin
 import org.jetbrains.kotlin.ir.backend.js.ir.JsIrArithBuilder
 import org.jetbrains.kotlin.ir.backend.js.ir.JsIrBuilder
 import org.jetbrains.kotlin.ir.backend.js.utils.isPure
@@ -19,6 +20,7 @@ import org.jetbrains.kotlin.ir.builders.declarations.addFunction
 import org.jetbrains.kotlin.ir.builders.declarations.buildField
 import org.jetbrains.kotlin.ir.declarations.*
 import org.jetbrains.kotlin.ir.declarations.persistent.PersistentIrElementBase
+import org.jetbrains.kotlin.ir.declarations.persistent.carriers.DeclarationCarrier
 import org.jetbrains.kotlin.ir.expressions.*
 import org.jetbrains.kotlin.name.Name
 import kotlin.collections.component1
@@ -239,19 +241,22 @@ private val IrDeclaration.correspondingProperty: IrProperty?
         if (this !is IrSimpleFunction && this !is IrField && this !is IrProperty)
             return null
 
+        // Objects are in fact fields and we need to ignore them
+        val originField = (this as? DeclarationCarrier)?.originField
+        if (originField == JsLoweredDeclarationOrigin.OBJECT_GET_INSTANCE_FUNCTION || originField == IrDeclarationOrigin.FIELD_FOR_OBJECT_INSTANCE)
+            return null
+
         return when (this) {
             is IrProperty -> this
-            is IrSimpleFunction -> propertyWithPersistenSafe {
+            is IrSimpleFunction -> propertyWithPersistentSafe {
                 correspondingPropertySymbol?.owner
             }
-            is IrField -> propertyWithPersistenSafe {
+            is IrField -> propertyWithPersistentSafe {
                 correspondingPropertySymbol?.owner
             }
             else -> error("Can be only IrProperty, IrSimpleFunction or IrField")
         }
     }
 
-private fun IrDeclaration.propertyWithPersistenSafe(transform: IrDeclaration.() -> IrProperty?): IrProperty? =
-    if (((this as? PersistentIrElementBase<*>)?.createdOn ?: 0) <= stageController.currentStage) {
-        transform()
-    } else null
+private fun IrDeclaration.propertyWithPersistentSafe(transform: IrDeclaration.() -> IrProperty?): IrProperty? =
+    transform()
