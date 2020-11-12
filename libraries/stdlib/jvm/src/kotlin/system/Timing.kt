@@ -23,6 +23,20 @@ public inline fun measureTimeMillis(block: () -> Unit): Long {
 }
 
 /**
+ * Executes the given [block] and returns elapsed time in milliseconds.
+ *
+ * @sample samples.system.Timing.measureBlockTimeInMillis
+ */
+public inline fun <R> measureMillis(block: () -> R): Pair<Long, R> {
+    contract {
+        callsInPlace(block, InvocationKind.EXACTLY_ONCE)
+    }
+    val start = System.currentTimeMillis()
+    val ret = block()
+    return Pair<System.currentTimeMillis() - start, ret>
+}
+
+/**
  * Executes the given [block] and returns elapsed time in nanoseconds.
  *
  * @sample samples.system.Timing.measureBlockNanoTime
