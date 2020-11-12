@@ -38,6 +38,8 @@ internal class KtFirEnumEntrySymbol(
     override val containingEnumClassIdIfNonLocal: ClassId?
         get() = firRef.withFir { it.containingClass()?.classId?.takeUnless { it.isLocal } }
 
+    override val hasInitializer: Boolean by firRef.withFirAndCache { it.initializer != null }
+
     override fun createPointer(): KtSymbolPointer<KtEnumEntrySymbol> {
         KtPsiBasedSymbolPointer.createForSymbolFromSource(this)?.let { return it }
         return KtFirEnumEntrySymbolPointer(containingEnumClassIdIfNonLocal!!, firRef.withFir { it.createSignature() })
