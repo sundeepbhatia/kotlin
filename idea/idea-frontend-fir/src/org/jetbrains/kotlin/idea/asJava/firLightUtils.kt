@@ -164,6 +164,7 @@ internal fun KtSymbolWithModality<*>.computeSimpleModality(): String? = when (mo
     KtCommonSymbolModality.FINAL -> PsiModifier.FINAL
     KtCommonSymbolModality.ABSTRACT -> PsiModifier.ABSTRACT
     KtCommonSymbolModality.OPEN -> null
+    KtCommonSymbolModality.UNKNOWN -> null
     else -> throw NotImplementedError()
 }
 

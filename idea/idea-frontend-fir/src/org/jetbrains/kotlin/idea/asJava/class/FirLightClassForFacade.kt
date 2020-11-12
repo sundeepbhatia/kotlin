@@ -201,19 +201,11 @@ class FirLightClassForFacade(
 
     override fun getAllInnerClasses(): Array<PsiClass> = PsiClass.EMPTY_ARRAY
 
-    override fun getInitializers(): Array<out PsiClassInitializer> = PsiClassInitializer.EMPTY_ARRAY
-
     override fun findInnerClassByName(@NonNls name: String, checkBases: Boolean): PsiClass? = null
 
     override fun isInheritorDeep(baseClass: PsiClass?, classToByPass: PsiClass?): Boolean = false
 
-    override fun getLBrace(): PsiElement? = null
-
-    override fun getRBrace(): PsiElement? = null
-
     override fun getName(): String = facadeClassFqName.shortName().asString()
-
-    override fun setName(name: String): PsiElement? = cannotModify()
 
     override fun getQualifiedName() = facadeClassFqName.asString()
 
@@ -225,8 +217,6 @@ class FirLightClassForFacade(
 
     override fun isEquivalentTo(another: PsiElement?): Boolean =
         equals(another) || another is FirLightClassForFacade && Comparing.equal(another.qualifiedName, qualifiedName)
-
-    override fun getElementIcon(flags: Int): Icon? = throw UnsupportedOperationException("This should be done by JetIconProvider")
 
     override fun isInheritor(baseClass: PsiClass, checkDeep: Boolean): Boolean {
         return baseClass.qualifiedName == CommonClassNames.JAVA_LANG_OBJECT
@@ -268,6 +258,4 @@ class FirLightClassForFacade(
     override fun getStartOffsetInParent() = firstFileInFacade.startOffsetInParent
 
     override fun isWritable() = files.all { it.isWritable }
-
-    override fun getVisibleSignatures(): MutableCollection<HierarchicalMethodSignature> = PsiSuperMethodImplUtil.getVisibleSignatures(this)
 }
