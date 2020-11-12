@@ -8,12 +8,16 @@ package org.jetbrains.kotlin.kapt3.base.incremental
 import com.sun.tools.javac.code.Symbol
 import org.jetbrains.kotlin.kapt3.base.util.KaptLogger
 import java.io.File
+import java.lang.annotation.Retention
+import java.lang.annotation.RetentionPolicy
 import java.net.URI
 import javax.annotation.processing.Filer
 import javax.annotation.processing.ProcessingEnvironment
 import javax.annotation.processing.Processor
+import javax.annotation.processing.RoundEnvironment
 import javax.lang.model.element.Element
 import javax.lang.model.element.PackageElement
+import javax.lang.model.element.TypeElement
 import javax.tools.FileObject
 import javax.tools.JavaFileManager
 import javax.tools.JavaFileObject
@@ -69,7 +73,16 @@ class IncrementalProcessor(private val processor: Processor, private val kind: D
 
     fun isUnableToRunIncrementally() = !kind.canRunIncrementally
     fun getGeneratedToSources() = dependencyCollector.value.getGeneratedToSources()
+    fun getAggregatedTypes() = dependencyCollector.value.getAggregatedTypes()
     fun getRuntimeType(): RuntimeProcType = dependencyCollector.value.getRuntimeType()
+
+
+    override fun process(annotations: Set<TypeElement>, roundEnv: RoundEnvironment): Boolean {
+        if (getRuntimeType() == RuntimeProcType.AGGREGATING) {
+            dependencyCollector.value.recordProcessingInputs(processor.supportedAnnotationTypes, annotations, roundEnv)
+        }
+        return processor.process(annotations, roundEnv)
+    }
 }
 
 internal class IncrementalProcessingEnvironment(private val processingEnv: ProcessingEnvironment, private val incFiler: IncrementalFiler) :
@@ -111,7 +124,37 @@ internal class AnnotationProcessorDependencyCollector(
     private val warningCollector: (String) -> Unit
 ) {
     private val generatedToSource = mutableMapOf<File, File?>()
+    private val aggregatedTypes = mutableSetOf<String>()
+
     private var isFullRebuild = !runtimeProcType.isIncremental
+
+    internal fun recordProcessingInputs(supportedAnnotationTypes: Set<String>, annotations: Set<TypeElement>, roundEnv: RoundEnvironment) {
+        if (isFullRebuild) return
+        validateAnnotations(annotations)
+        if (supportedAnnotationTypes.contains("*")) {
+            aggregatedTypes.addAll(getTopLevelClassNames(roundEnv.rootElements?.filterNotNull() ?: emptyList()))
+        } else {
+            for (annotation in annotations) {
+                aggregatedTypes.addAll(
+                    getTopLevelClassNames(
+                        roundEnv.getElementsAnnotatedWith(
+                            annotation
+                        )?.filterNotNull() ?: emptyList()
+                    )
+                )
+            }
+        }
+    }
+
+    private fun validateAnnotations(annotations: Set<TypeElement>) {
+        for (annotation in annotations) {
+            val retention = annotation.getAnnotation(Retention::class.java)
+            if (retention != null && retention.value == RetentionPolicy.SOURCE) {
+                isFullRebuild = true
+                warningCollector.invoke("'@" + annotation.simpleName + "' has source retention. Aggregating annotation processors require class or runtime retention")
+            }
+        }
+    }
 
     internal fun add(createdFile: URI, originatingElements: Array<out Element?>) {
         if (isFullRebuild) return
@@ -134,6 +177,9 @@ internal class AnnotationProcessorDependencyCollector(
     }
 
     internal fun getGeneratedToSources(): Map<File, File?> = if (isFullRebuild) emptyMap() else generatedToSource
+
+    internal fun getAggregatedTypes(): Set<String> = if (isFullRebuild) emptySet() else aggregatedTypes
+
     internal fun getRuntimeType(): RuntimeProcType {
         return if (isFullRebuild) {
             RuntimeProcType.NON_INCREMENTAL
@@ -152,6 +198,33 @@ private fun getSrcFiles(elements: Array<out Element?>): Set<File> {
         val uri = (origin as? Symbol.ClassSymbol)?.sourcefile?.toUri()?.takeIf { it.isAbsolute }
         uri?.let { File(it).canonicalFile }
     }.toSet()
+}
+
+private const val PACKAGE_TYPE_NAME = "package-info"
+
+fun getElementName(current: Element?): String? {
+    if (current is PackageElement) {
+        val packageName = current.qualifiedName.toString()
+        return if (packageName.isEmpty()) {
+            PACKAGE_TYPE_NAME
+        } else {
+            "$packageName.$PACKAGE_TYPE_NAME"
+        }
+    }
+    if (current is TypeElement) {
+        return current.qualifiedName.toString()
+    }
+    return null
+}
+
+private fun getTopLevelClassNames(elements: Collection<Element>): Collection<String> {
+    return elements.mapNotNull { elem ->
+        var origin = elem
+        while (origin.enclosingElement != null && origin.enclosingElement !is PackageElement) {
+            origin = origin.enclosingElement
+        }
+        getElementName(origin)
+    }
 }
 
 enum class DeclaredProcType(val canRunIncrementally: Boolean) {
