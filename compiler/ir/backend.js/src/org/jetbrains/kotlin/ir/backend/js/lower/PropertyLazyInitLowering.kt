@@ -84,9 +84,9 @@ class PropertyLazyInitLowering(
             declarations
         )
 
-        if (allFieldsInFilePure(fieldToInitializer.values)) {
-            return null
-        }
+//        if (allFieldsInFilePure(fieldToInitializer.values)) {
+//            return null
+//        }
 
         val initialisedField = irFactory.createInitialisationField(fileName)
             .apply {
@@ -202,14 +202,14 @@ class RemoveInitializersForLazyProperties(
         get() = context.fileToInitialisationFuns
 
     override fun transformFlat(declaration: IrDeclaration): List<IrDeclaration>? {
-        val file = declaration.parent as? IrFile ?: return null
-        val declarations = ArrayList(file.declarations)
-
-        val fields = calculateFieldToExpression(declarations).values
-
-        if (allFieldsInFilePure(fields)) {
-            return null
-        }
+//        val file = declaration.parent as? IrFile ?: return null
+//        val declarations = ArrayList(file.declarations)
+//
+//        val fields = calculateFieldToExpression(declarations).values
+//
+//        if (allFieldsInFilePure(fields)) {
+//            return null
+//        }
 
         declaration.correspondingProperty
             ?.takeIf { it.isForLazyInit() }
@@ -241,14 +241,17 @@ private val IrDeclaration.correspondingProperty: IrProperty?
 
         return when (this) {
             is IrProperty -> this
-            is IrSimpleFunction -> {
-                if (((this as? PersistentIrElementBase<*>)?.createdOn ?: 0) <= stageController.currentStage) {
-                    correspondingPropertySymbol?.owner
-                } else null
-            }
-            is IrField -> if (((this as? PersistentIrElementBase<*>)?.createdOn ?: 0) <= stageController.currentStage) {
+            is IrSimpleFunction -> propertyWithPersistenSafe {
                 correspondingPropertySymbol?.owner
-            } else null
+            }
+            is IrField -> propertyWithPersistenSafe {
+                correspondingPropertySymbol?.owner
+            }
             else -> error("Can be only IrProperty, IrSimpleFunction or IrField")
         }
     }
+
+private fun IrDeclaration.propertyWithPersistenSafe(transform: IrDeclaration.() -> IrProperty?): IrProperty? =
+    if (((this as? PersistentIrElementBase<*>)?.createdOn ?: 0) <= stageController.currentStage) {
+        transform()
+    } else null
