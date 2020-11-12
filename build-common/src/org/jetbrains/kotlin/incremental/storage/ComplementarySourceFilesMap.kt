@@ -5,6 +5,7 @@
 
 package org.jetbrains.kotlin.incremental.storage
 
+import com.intellij.openapi.diagnostic.Logger
 import org.jetbrains.kotlin.incremental.dumpCollection
 import java.io.File
 
@@ -12,12 +13,19 @@ class ComplementarySourceFilesMap(
     storageFile: File,
     private val pathConverter: FileToPathConverter
 ) : BasicStringMap<Collection<String>>(storageFile, PathStringDescriptor, StringCollectionExternalizer) {
+    val LOG = Logger.getInstance(this.javaClass.name)
+
+    private fun debug(msg: String) {
+        LOG.info(Thread.currentThread().name + "\t" + msg)
+    }
 
     operator fun set(sourceFile: File, complementaryFiles: Collection<File>) {
+        debug("storage[${pathConverter.toPath(sourceFile)}] = ${pathConverter.toPaths(complementaryFiles)}")
         storage[pathConverter.toPath(sourceFile)] = pathConverter.toPaths(complementaryFiles)
     }
 
     operator fun get(sourceFile: File): Collection<File> {
+        debug("storage[${pathConverter.toPath(sourceFile)}].orEmpty()")
         val paths = storage[pathConverter.toPath(sourceFile)].orEmpty()
         return pathConverter.toFiles(paths)
     }
@@ -26,5 +34,7 @@ class ComplementarySourceFilesMap(
         value.dumpCollection()
 
     fun remove(file: File): Collection<File> =
-        get(file).also { storage.remove(pathConverter.toPath(file)) }
+        get(file).also {
+            debug("storage.remove(${pathConverter.toPath(file)}")
+            storage.remove(pathConverter.toPath(file)) }
 }

@@ -16,12 +16,18 @@
 
 package org.jetbrains.kotlin.incremental.storage
 
+import com.intellij.openapi.diagnostic.Logger
 import org.jetbrains.annotations.TestOnly
 import java.io.File
 import java.io.IOException
 
 open class BasicMapsOwner(val cachesDir: File) {
     private val maps = arrayListOf<BasicMap<*, *>>()
+    private val LOG = Logger.getInstance(BasicMapsOwner.javaClass)
+
+    private fun debug(msg: String) {
+        LOG.info(Thread.currentThread().name + "\t" + msg)
+    }
 
     companion object {
         val CACHE_EXTENSION = "tab"
@@ -30,7 +36,9 @@ open class BasicMapsOwner(val cachesDir: File) {
     protected val String.storageFile: File
         get() = File(cachesDir, this + "." + CACHE_EXTENSION)
 
+    @Synchronized
     protected fun <K, V, M : BasicMap<K, V>> registerMap(map: M): M {
+        LOG.debug("Register map $map")
         maps.add(map)
         return map
     }
@@ -47,12 +55,15 @@ open class BasicMapsOwner(val cachesDir: File) {
         forEachMapSafe("flush") { it.flush(memoryCachesOnly) }
     }
 
+    @Synchronized
     private fun forEachMapSafe(actionName: String, action: (BasicMap<*, *>) -> Unit) {
+        debug("Executed action $actionName")
         val actionExceptions = LinkedHashMap<String, Exception>()
         maps.forEach {
             try {
                 action(it)
             } catch (e: Exception) {
+                debug("Exception $e during execution of $actionName")
                 actionExceptions[it.storageFile.name] = e
             }
         }
@@ -66,5 +77,6 @@ open class BasicMapsOwner(val cachesDir: File) {
     }
 
     @TestOnly
+    @Synchronized
     fun dump(): String = maps.joinToString("\n\n") { it.dump() }
 }

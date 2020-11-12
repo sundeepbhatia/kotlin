@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.incremental
 
+import com.intellij.openapi.diagnostic.Logger
 import com.intellij.util.io.EnumeratorStringDescriptor
 import org.jetbrains.kotlin.incremental.storage.*
 import org.jetbrains.kotlin.metadata.ProtoBuf
@@ -49,6 +50,12 @@ abstract class AbstractIncrementalCache<ClassName>(
     workingDir: File,
     protected val pathConverter: FileToPathConverter
 ) : BasicMapsOwner(workingDir), IncrementalCacheCommon {
+    private val LOG = Logger.getInstance(this.javaClass)
+
+    private fun debug(msg: String) {
+        LOG.info(Thread.currentThread().name + "\t" + msg)
+    }
+
     companion object {
         private val SUBTYPES = "subtypes"
         private val SUPERTYPES = "supertypes"
@@ -179,7 +186,9 @@ abstract class AbstractIncrementalCache<ClassName>(
         val filesQueue = ArrayDeque(dirtyFiles)
         while (filesQueue.isNotEmpty()) {
             val file = filesQueue.pollFirst()
-            complementaryFilesMap[file].forEach {
+            val tmpFiles = complementaryFilesMap[file]
+            debug("complementaryFilesMap[$file]=$tmpFiles")
+                    tmpFiles.forEach {
                 if (complementaryFiles.add(it)) filesQueue.add(it)
             }
         }
@@ -189,6 +198,7 @@ abstract class AbstractIncrementalCache<ClassName>(
 
     override fun updateComplementaryFiles(dirtyFiles: Collection<File>, expectActualTracker: ExpectActualTrackerImpl) {
         dirtyFiles.forEach {
+            debug("complementaryFilesMap.remove[$it]")
             complementaryFilesMap.remove(it)
         }
 
@@ -197,10 +207,12 @@ abstract class AbstractIncrementalCache<ClassName>(
             for (actual in actuals) {
                 actualToExpect.getOrPut(actual) { hashSetOf() }.add(expect)
             }
+            debug("complementaryFilesMap[$expect]=$actuals")
             complementaryFilesMap[expect] = actuals
         }
 
         for ((actual, expects) in actualToExpect) {
+            debug("complementaryFilesMap[$actual]=$expects")
             complementaryFilesMap[actual] = expects
         }
     }
